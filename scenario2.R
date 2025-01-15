@@ -40,7 +40,9 @@ generate_data_scenario2 <- function(b0, b1, b2, error_type, me = 1, n_sample = 5
   }
   else if (error_type == "systematic") {
     x <- me + (1 + me) * xt + xe
+    x <- scale_(x)
     z <- me + (1 + me) * zt + ze
+    z <- scale_(z)
   }
   else if (error_type == "heteroscedastic") {
     xe <- rnorm(n = n,
@@ -157,6 +159,7 @@ get_coefs_scenario2 <- function(df, method, measurement_error){
       optim.dx.tol = 0.001
     )
     #browser()
+    print(parameterEstimates(fit))
     coefs <- parameterEstimates(fit)[c(13, 7, 8), c("label", "est", "se")] %>% as_tibble()
     coefs <- coefs %>% 
       select(term = label, value = est, se) %>% 

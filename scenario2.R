@@ -197,11 +197,11 @@ get_coefs_scenario2 <- function(df, method, measurement_error){
     model_simex <- simex(model_naive, SIMEXvariable = c("x","z"), 
                          B = 200, asymptotic = F, 
                          measurement.error = cbind(measurement_error, measurement_error))
-    #coefs <- coef(model_simex)
-    coefs <- broom::tidy(model_naive) %>%
-      select(term, value = estimate, se = std.error) %>%
+    sum <- summary(model_simex)$coefficients$jackknife
+    coefs <- as.data.frame(sum) %>%  
+      as_tibble() %>% 
+      select(value = Estimate, se = `Std. Error`) %>% 
       mutate(term = c("b0", "b1", "b2"))
-    #browser()
   }
   else{
     stop(sprintf("Unknown method: %s", method))

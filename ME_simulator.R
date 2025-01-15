@@ -216,6 +216,10 @@ ME_simulator <- R6::R6Class("ME_simulator",
                                   saveRDS(self, fname)
                                 },
                                 
+                                load = function(fname){
+                                  readRDS(fname)
+                                },
+                                
                                 get_stats = function(){
                                   if(is.null(self$results)){
                                     warning("No results available, run simulation first.")
@@ -247,6 +251,7 @@ ME_simulator <- R6::R6Class("ME_simulator",
                                                        color_var = "measurement_error",
                                                        color_label = "ME",
                                                        max_se = NULL,
+                                                       alpha = .1,
                                                        with_plot = T) {
                                   coef <- match.arg(coef)
                                   metric <- metric[[1]]
@@ -273,7 +278,7 @@ ME_simulator <- R6::R6Class("ME_simulator",
                                                  y = !!sym(metric), 
                                                  color = !!sym(color_label)))
                                     q <- q + geom_boxplot(width = .2, outliers = FALSE)
-                                    q <- q + geom_jitter(alpha = .1, position = position_dodge(width = .2))
+                                    q <- q + geom_jitter(alpha = alpha, position = position_dodge(width = .2))
                                     q <- q + facet_grid(error_type ~ method)
                                     q <- q  + theme_bw()
                                     if(coef != "all"){

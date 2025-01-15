@@ -159,7 +159,7 @@ get_coefs_scenario2 <- function(df, method, measurement_error){
       optim.dx.tol = 0.001
     )
     #browser()
-    print(parameterEstimates(fit))
+    #print(parameterEstimates(fit))
     coefs <- parameterEstimates(fit)[c(13, 7, 8), c("label", "est", "se")] %>% as_tibble()
     coefs <- coefs %>% 
       select(term = label, value = est, se) %>% 

@@ -1,4 +1,4 @@
-## Measurement Error Correction
-This project compares different measurement error correction methods for linear regression models. 
+## Measurement Error Correction Simulation
+This project compares different measurement error correction methods for linear regression models using simulations.
 
-Clone project and knit manual.Rmd for further information.
+Clone project and knitr `manual.Rmd` for further information.

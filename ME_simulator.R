@@ -87,6 +87,7 @@ ME_simulator <- R6::R6Class("ME_simulator",
                                               c("scenario", 
                                                 "N (sample)", 
                                                 "N (batch)", 
+                                                "Seed",
                                                 "Measurement Errors", 
                                                 "ME differences", 
                                                 "Error types", 
@@ -94,6 +95,7 @@ ME_simulator <- R6::R6Class("ME_simulator",
                                               c(self$scenario, 
                                                 self$n_sample, 
                                                 self$n_batch, 
+                                                ifelse(is.null(self$seed), "--", self$seed),
                                                 paste(self$measurement_errors, collapse = ", "),
                                                 paste(self$me_diffs, collapse = ", "),
                                                 paste(self$error_types, collapse = ", "),
@@ -167,6 +169,7 @@ ME_simulator <- R6::R6Class("ME_simulator",
                                       messagef("Simulating data with '%s' error (me_raw = %.2f)...", et, me_raw)
                                       
                                       simulated_data <- self$generate_data(error_type = et, me = me_raw)
+                                      
                                       map_dfr(self$me_diffs, function(md) {
                                         me <- me_raw * (1 +  md)
                                         messagef("...  %d batches with me_diff = %.2f -> me_total = %.2f.", self$n_batch, md, me)

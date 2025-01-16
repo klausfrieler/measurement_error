@@ -11,7 +11,7 @@ source("ME_simulator.R")
 ```
 
 
-This R project allows to simulate four different types  of measurement error (classical, differential, heteroscedastic, systematic) and how it effects the cofficient estimates in a simple linear regression model with two predictors. Additional, it presetns  four different methods for correcting the measurement error (ME): A Laten Variable Model apporach (LV), multiple imputation (MI), SIMEX (SMX), and a simple outlier exclusion (OE), and of course without any correction. We further have two scenarios, one where the ME only affects one predictor (scenario 1) and one where it affects both (scenario 2).
+This R project allows to simulate four different types  of measurement error (classical, differential, heteroscedastic, systematic) and how it effects the coefficient estimates in a simple linear regression model with two predictors. Additional, it presents  four different methods for correcting the measurement error (ME): A Latent Variable Model approach (LV), multiple imputation (MI), SIMEX (SMX), and a simple outlier exclusion (OE), and of course without any correction. We further have two scenarios, one where the ME only affects one predictor (scenario 1) and one where it affects both (scenario 2).
 
 To this end, we provide a R6 class, `ME_simulator`. To use this, first create an object of that class, with a bunch of parameters (whereall have reasonable defaults). For example, here is scenario 2 simulation
 
@@ -34,7 +34,7 @@ mesim$run()
 ```
 Per default, the verbosity is on, so we get a bunch of messages to watch the simulations going on. Note that this can take a long time, depending on the settings, With only single batch and one ME difference, this example will take  a reasonable short time to run.
 
-After the rum, the results are stored in the `mesim` object, and can be accessed directly, as well as some summary stats of the simulations. 
+After the run, the results are stored in the `mesim` object, and can be accessed directly, as well as some summary stats of the simulations. 
 
 ```{r results}
 mesim$results
@@ -42,7 +42,7 @@ mesim$result_stats
 
 ```
 
-There is also a flexible plotting option with the `diagnostics` memmber function. This will plot a metric (of your chosing) by correction method and error type over different ME, by default, but can be very flexibly configured.
+There is also a flexible plotting option with the `diagnostics` member function. This will plot a metric (of your choosing) by correction method and error type over different ME, by default, but can be very flexibly configured.
 
 
 ```{r plot}

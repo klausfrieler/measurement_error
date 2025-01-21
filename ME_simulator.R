@@ -70,9 +70,9 @@ ME_simulator <- R6::R6Class("ME_simulator",
                                   self$results <- NULL
                                   self$result_stats <- NULL
                                   self$simulated_data <- NULL
-                                  if(scenario == 2){
-                                    self$methods <- setdiff(self$methods, "MI")
-                                  }
+                                  #if(scenario == 2){
+                                  #  self$methods <- setdiff(self$methods, "MI")
+                                  #}
                                   invisible(self)
                                 },
                                 
@@ -153,8 +153,7 @@ ME_simulator <- R6::R6Class("ME_simulator",
                                 },
                                 
                                 run  = function(fname = NULL, seed = NULL) {
-                                  #sample size (n) is a parameter, possible values are 50, 500, 5000
-                                  #include parameter for true ME info vs. aggregated/approximate ME info?
+                                  #sample size (n) is a parameter, possible values are 50, 500, 5000; but no separate loop, instead run simulator several times
                                   #browser()
                                   if(!is.null(seed)){
                                     set.seed(seed)

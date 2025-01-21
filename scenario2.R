@@ -167,29 +167,36 @@ get_coefs_scenario2 <- function(df, method, measurement_error){
   }
   else if (method == "MI") {
     #browser()
-    mice.dfs = TSI(
-      df %>% select(-c(xt, xe)),
-      os_names = c("x"),
-      #se_names = c("xe"),
-      metrics = "z",
-      score_types = "CTT",
-      reliability = c(
-        "x" = 1 / (1 + measurement_error ^ 2)
-        #"z" = 1 / (1 + measurement_error ^ 2)
-      ),
-      separated = F,
-      mice_args = c(
-        m = 50,
-        maxit = 10,
-        printFlag = F
+    tryCatch( 
+      {
+      mice.dfs = TSI(
+        df %>% select(-c(xt, xe, zt, ze)),
+        os_names = c("x","z"),
+        #se_names = c("xe"),
+        metrics = "z",
+        score_types = "CTT",
+        reliability = c(
+          "x" = 1 / (1 + measurement_error ^ 2),
+          "z" = 1 / (1 + measurement_error ^ 2)
+        ),
+        separated = F,
+        mice_args = c(
+          m = 50,
+          maxit = 10,
+          printFlag = F
+        )
       )
-    )
-    #coefs <- pool(with(mice.dfs, lm(y ~ true_x + true_z))) %>% pluck("pooled") %>% pluck("estimate")
-    coefs <- pool(with(mice.dfs, lm(y ~ true_x + zt))) %>% 
-      summary() %>% 
-      select(term, value = estimate, se = std.error) %>% 
-      mutate(term = c("b0", "b1", "b2"))
-    #browser()
+      #coefs <- pool(with(mice.dfs, lm(y ~ true_x + true_z))) %>% pluck("pooled") %>% pluck("estimate")
+      coefs <- pool(with(mice.dfs, lm(y ~ true_x + true_z))) %>% 
+        summary() %>% 
+        select(term, value = estimate, se = std.error) %>% 
+        mutate(term = c("b0", "b1", "b2"))
+      #browser()
+      },
+      error = function(e) {
+        coefs <<- tibble(term = c("b0", "b1", "b2"), value = c(NA, NA, NA), se = c(NA, NA, NA))
+      }
+   )
   }
   
   else if(method == "simex") {

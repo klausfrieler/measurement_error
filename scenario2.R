@@ -2,7 +2,7 @@ generate_data_scenario2 <- function(b0, b1, b2, error_type, me = 1, n_sample = 5
   n <- n_sample * n_batch
   #browser()
   if(!normal){
-    xt <- scale_(5+rpois(
+    xt <- scale_(5 + rpois(
       n = n,
       lambda = 2))
     xt <- scale_(xt)

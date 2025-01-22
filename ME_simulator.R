@@ -48,7 +48,7 @@ ME_simulator <- R6::R6Class("ME_simulator",
                                                       n_batch = 50,
                                                       normal = FALSE,
                                                       verbose = FALSE,
-                                                      scenario = c(1, 2),
+                                                      scenario = c(1, 2, 3),
                                                       methods = c("no_correction",
                                                                   "outlier_exclusion",
                                                                   #"Weighting",
@@ -59,7 +59,7 @@ ME_simulator <- R6::R6Class("ME_simulator",
                                   self$coefficients <- list(b0 = b0, b1 = b1, b2 = b2)
                                   self$error_types <- error_types
                                   self$methods <- methods
-                                  self$scenario <- scenario
+                                  self$scenario <- scenario[1]
                                   self$n_sample <- n_sample
                                   self$n_batch <- n_batch
                                   self$measurement_errors <- measurement_errors
@@ -73,6 +73,23 @@ ME_simulator <- R6::R6Class("ME_simulator",
                                   #if(scenario == 2){
                                   #  self$methods <- setdiff(self$methods, "MI")
                                   #}
+                                  if(scenario == 3){
+                                    if(length(error_types) > 1 || error_types[[1]] != "heteroscedastic"){
+                                      warning("For scenario 3 only heteroscedastic error available. Fixing.")
+                                    }
+                                    self$error_types <- "heteroscedastic"
+                                    if(any(!is.character(measurement_errors))){
+                                      browser()
+                                      stop("Scenario 3 uses categorial error levels (very_high, high, medium and low)")
+                                    }
+                                    bad_levels <- setdiff(measurement_errors, scenario3_me_levels)
+                                    if(length(bad_levels) > 1){
+                                      browser()
+                                      stop("Scenario 3 uses categorial error levels (very_high, high, medium and low)")
+                                    }
+                                    self$measurement_errors <- measurement_errors
+                                    self$me_diffs <- 0
+                                  }
                                   invisible(self)
                                 },
                                 
@@ -113,6 +130,9 @@ ME_simulator <- R6::R6Class("ME_simulator",
                                   else if(self$scenario == 2){
                                     generator_func <- generate_data_scenario2
                                   }
+                                  else if(self$scenario == 3){
+                                    generator_func <- generate_data_scenario3
+                                  }
                                   else{
                                     stop(sprintf("Invalid scenario: %s", scenario))
                                   }
@@ -135,6 +155,9 @@ ME_simulator <- R6::R6Class("ME_simulator",
                                   else if(self$scenario == 2){
                                     coef_func <- get_coefs_scenario2
                                   }
+                                  else if(self$scenario == 3){
+                                    coef_func <- get_coefs_scenario3
+                                  }
                                   else{
                                     stop(sprintf("Invalid scenario: %s", scenario))
                                   }
@@ -154,7 +177,7 @@ ME_simulator <- R6::R6Class("ME_simulator",
                                 
                                 run  = function(fname = NULL, seed = NULL) {
                                   #sample size (n) is a parameter, possible values are 50, 500, 5000; but no separate loop, instead run simulator several times
-                                  #browser()
+
                                   if(!is.null(seed)){
                                     set.seed(seed)
                                   }
@@ -163,19 +186,27 @@ ME_simulator <- R6::R6Class("ME_simulator",
                                   }
                                   self$results <- 
                                     map_dfr(self$measurement_errors, function(me_raw) {
-                                    
                                       map_dfr(self$error_types, function(et) {
-                                      messagef("Simulating data with '%s' error (me_raw = %.2f)...", et, me_raw)
-                                      
-                                      simulated_data <- self$generate_data(error_type = et, me = me_raw)
+                                      if(self$scenario != 3){
+                                        messagef("Simulating data with '%s' error (me_raw = %.2f)...", et, me_raw)
+                                      }
+                                      else{
+                                        messagef("Simulating data with '%s' error (me_raw = %s)...", et, me_raw)
+                                      }
+                                        simulated_data <- self$generate_data(error_type = et, me = me_raw)
                                       
                                       map_dfr(self$me_diffs, function(md) {
-                                        me <- me_raw * (1 +  md)
-                                        messagef("...  %d batches with me_diff = %.2f -> me_total = %.2f.", self$n_batch, md, me)
+                                        if(self$scenario != 3){
+                                          me <- me_raw * (1 +  md)
+                                          messagef("...  %d batches with me_diff = %.2f -> me_total = %.2f.", self$n_batch, md, me)
+                                        }
+                                        else{
+                                          me <- me_raw
+                                        }
                                         
                                         map_dfr(1:self$n_batch, function(i) {
                                           #simulation
-                                          #browser()
+                                          #rowser()
                                           #analysis methods and evaluation, i.e. comparison of coefficients to ground truth from simulation
                                           df <- simulated_data[simulated_data$batch == i, ] %>% select(-batch)
                                           #browser()
@@ -202,8 +233,13 @@ ME_simulator <- R6::R6Class("ME_simulator",
                                              n_batch = self$n_batch,
                                              measurement_error_raw = me_raw)
                                   })
+                                  if(self$scenario == 3){
+                                    self$results <- self$results %>% 
+                                      mutate(measurement_error = factor(measurement_error, 
+                                                                        levels = scenario3_me_levels))
+                                  }
                                   self$get_stats()
-                                  print(self$result_stats)
+                                  #print(self$result_stats)
                                   if(!is.null(fname)){
                                     self$save(fname)
                                   }

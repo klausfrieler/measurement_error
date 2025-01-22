@@ -98,20 +98,21 @@ generate_data_scenario3 <- function(b0 = -1,
     #BAT scores
     
     #GMS.MT scores
-    xt <- scale(runif(n = n, min = 1, max = 7)) %>% as.numeric()
-    x_se <- rtruncnorm(
+    zt <- scale(runif(n = n, min = 1, max = 7)) %>% as.numeric()
+    z_se <- rtruncnorm(
       n = n,
       a = 1,
       b = 7,
       mean = 4,
-      sd = sd(xt) #bat_me_tab$me[i] * sd(xt)
+      #@daniel what to use here?!
+      sd = sd(zt) #bat_me_tab$me[i] * sd(xt)
     ) %>% as.numeric()
-    x <- xt + x_se
+    z <- zt + z_se
     
     #MIQ scores
-    zt <- rnorm(n = n, 0, 1)
-    z_tmp <- catR::simulateRespondents(
-      thetas = zt ,
+    xt <- rnorm(n = n, 0, 1)
+    x_tmp <- catR::simulateRespondents(
+      thetas = xt ,
       itemBank = miq_ib,
       start = start,
       stop = list(
@@ -122,8 +123,8 @@ generate_data_scenario3 <- function(b0 = -1,
       test = test,
       final = final
     )
-    z <- z_tmp$final.values.df$estimated.theta
-    z_se <- z_tmp$final.values.df$final.SE
+    x <- x_tmp$final.values.df$estimated.theta
+    x_se <- x_tmp$final.values.df$final.SE
     
     yt <- b0 + b1 * xt + b2 * zt
     #yt <- rnorm(n = n_sample, 0, 1)
@@ -203,8 +204,8 @@ get_coefs_scenario3 <- function(df, method,  measurement_error_level){
   
   else if (method == "weighting") {
     #inv_err <- mean(1 / df$y_se^2, 1 / df$x_se^2, 1 / df$z_se^2)
-    inv_err <- rep(mean(1 / df$z_se ^ 2), nrow(df))
-    inv_err <- 1 / df$z_se ^ 2
+    #inv_err <- rep(mean(1 / df$z_se ^ 2), nrow(df))
+    inv_err <- 1 / df$x_se ^ 2
     coefs <- broom::tidy(lm(y ~ x + z, weights = inv_err, data = df)) %>% 
       select(term, value = estimate, se = std.error) %>% 
       mutate(term = c("b0", "b1", "b2"))

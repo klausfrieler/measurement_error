@@ -20,6 +20,7 @@ diagnostics_1 <- function(simul_data,
              name) %>%
     summarise(!!sym(metric) := mean(!!sym(metric)), .groups = "drop") %>%
     arrange(metric)
+  
   if (with_plot) {
     q <- simul_data %>%
       mutate(!!sym(color_label) := factor(!!sym(color_var)),!!sym(x_label) := factor(!!sym(x_var))) %>%
@@ -105,6 +106,26 @@ simu_def_full <- expand_grid(
   methods = c("no_correction", "outlier_exclusion", "LV", "MI", "simex")
 )
 
+simu_def_full_12 <- expand_grid(
+  n_samples = c(50, 500, 5000),
+  scenario = c(1, 2),
+  n_batch = 50,
+  error_types = c("classical", "systematic", "heteroscedastic", "differential"),
+  measurement_errors = as.character(c(.05, 0.33, 0.67, 1, 1.52)),
+  me_diffs = c(0, 0.1, 0.5),
+  methods = c("no_correction", "outlier_exclusion", "LV", "MI", "simex")
+)
+
+simu_def_full_3 <- expand_grid(
+  n_samples = c(50, 500, 5000),
+  scenario = c(3),
+  n_batch = 50,
+  error_types = c("heteroscedastic"),
+  measurement_errors = c("low", "medium", "high", "very high"),
+  me_diffs = c(0),
+  methods = c("no_correction", "outlier_exclusion", "weighting", "LV", "MI", "simex")
+)
+
 simu_def_test_12 <- expand_grid(
   n_samples = c(50, 500),
   scenario = c(1, 2),
@@ -125,17 +146,20 @@ simu_def_test_3 <- expand_grid(
   methods = c("no_correction")
 )
 
+simu_def_full <- bind_rows(simu_def_full_12, simu_def_full_3)
 simu_def_test <- bind_rows(simu_def_test_12, simu_def_test_3)
+sim_dir <- "simulations"
+fig_dir <- "figures"
 
 ground_truth <- list(
-  scenario1 = c(b0 = 1, b1 = -0.5, b2 = 0.25),
-  scenario2 = c(b0 = 1, b1 = 0.4, b2 = 0.2),
-  scenario3 = c(b0 = -1, b1 = 0.5, b2 = 0.3)
+  scenario1 = c(b0 = +1, b1 = -0.5, b2 = +0.25),
+  scenario2 = c(b0 = +1, b1 = +0.4, b2 = +0.20),
+  scenario3 = c(b0 = -1, b1 = +0.5, b2 = +0.30)
 ) 
 
 
 ### Scenario 1
-run_simulations <- function(scenarios = c(1, 2, 3), id = "scenario", config = simu_def){
+run_simulations <- function(scenarios = c(1, 2, 3), id = "scenario", config = simu_def, save_singles = T){
   ret <- map_dfr(scenarios, function(sc) {
     
     gt <- ground_truth[[sprintf("scenario%d", sc)]]
@@ -147,10 +171,6 @@ run_simulations <- function(scenarios = c(1, 2, 3), id = "scenario", config = si
       me <- as.numeric(me)
     }
     map_dfr(def$n_samples, function(n) {
-      if(sc == 3){
-        browser()
-      }
-      fname <- sprintf("%s%d_n=%d.rds", id, sc, n)
       simulator <- ME_simulator$new(
         scenario = sc,
         n_sample = n,
@@ -164,7 +184,10 @@ run_simulations <- function(scenarios = c(1, 2, 3), id = "scenario", config = si
         measurement_errors = me,
       )
       simulator$run()
-      simulator$save(fname)
+      if(save_singles){
+        fname <- sprintf("%s/%s%d_n=%d.rds", sim_dir, id, sc, n)
+        simulator$save(fname)
+      }
       #browser()
       simulator$results %>% mutate(N = n_sample,
                                    measurement_error = as.character(simulator$results$measurement_error),
@@ -174,9 +197,20 @@ run_simulations <- function(scenarios = c(1, 2, 3), id = "scenario", config = si
     })
   })
   cutoff <- ret %>% filter(method == "no_correction") %>% pull(se) %>% max()
-  ret <- ret %>% mutate(status = factor(se <= cutoff, levels = c(FALSE, TRUE), labels = c("bad", "clean")))
-  saveRDS( ret, file = sprintf("%s_all.rds", id))
+  ret <- ret %>% mutate(status = factor(!is.na(se) & se <= cutoff, levels = c(FALSE, TRUE), labels = c("bad", "clean")))
+  saveRDS(ret, file = sprintf("%s/%s_all.rds", sim_dir, id))
   ret
+}
+
+load_simulations <- function(){
+  files <- list.files(sim_dir, "*rds", full.names = T)
+  for(fname in files){
+    messagef("Reading: %s...", fname)
+    x <- readRDS(fname)
+    obj_name <- basename(fname) %>% tools::file_path_sans_ext() %>% janitor::make_clean_names()
+    browser()
+    assign(obj_name, x, globalenv())
+  }
 }
 
 make_tables <- function(simulations, with_save = F){
@@ -195,14 +229,23 @@ make_tables <- function(simulations, with_save = F){
   
 }
 
-make_plots <- function(simulations, with_save = T, id = "test"){
-  dat_clean <- simulations %>% filter(status == "clean")
-  
-  diagnostics_1(dat_clean %>% filter(scenario == 1, measurement_error_diff == 0), metric = "rel_error")
-  if(with_save)ggsave(sprintf("%s1_all_clean.png", id))
+make_plots <- function(sim_results, with_save = T, id = "test"){
+  if(is(sim_results, "ME_simulator")){
+    sim_results <- sim_resuilts$results
+  }
+  if("status" %in% names(sim_results)){
+    dat_clean <- sim_results %>% filter(status == "clean")
+    extra <- "_clean"
+  }
+  else{
+    dat_clean <- sim_results
+    extra <- ""
+  }
+  diagnostics_1(dat_clean %>% filter(measurement_error_diff == 0), metric = "rel_error")
+  if(with_save)ggsave(sprintf("%s/%s%s_all%s.png", fig_dir, id, scenario, extra))
   
   #Figures 3a-c
-  sample_sizes <- unique(simulations %>% filter(scenario == 1) %>% pull(N))
+  sample_sizes <- unique(dat_clean %>% pull(N))
   for(i in sample_sizes){
     browser()
     diagnostics_2(
@@ -213,9 +256,7 @@ make_plots <- function(simulations, with_save = T, id = "test"){
       color_var = "measurement_error_raw",
       color_label = "ME raw"
     )
-    if(with_save)ggsave(sprintf("%s1_N=%d_b1_clean.png", id, i))
+    if(with_save)ggsave(sprintf("%s/%s%s_n=%d_b1%s.png", fig_dir, id, scenario, i, extra))
 
   }
-  
-
 }

@@ -10,13 +10,6 @@ read_item_banks <- function() {
   
 }
 
-# alpha <- 0.05
-# start <- list(nrItems = 1,
-#               theta = 0,
-#               startSelect = "MFI")
-# stop  <- list(rule = "length", thr = 10, alpha = alpha)
-# final <- list(method = "WL", alpha = alpha)
-
 ##BAT: items, me and reliability found through trial and error with n = 50
 ### items me    reliability
 ### 5     1.52  0.3
@@ -72,6 +65,7 @@ generate_data_scenario3 <- function(b0 = -1,
   #include parameter for true ME info vs. aggregated/approximate ME info?
   me <- match.arg(me)
   read_item_banks()
+  
   bat_me_tab <- tibble(
     no_items = c(5, 10, 25, 41),
     me = c(1.52, 1, 0.65, 0.49),
@@ -85,6 +79,14 @@ generate_data_scenario3 <- function(b0 = -1,
     rel = c(0.28, 0.51, 0.69, 0.8),
     level = c("very_high", "high", "medium", "low")
   )
+
+  ###catR parameters
+  alpha <- 0.05
+  start <- list(nrItems = 1,
+                theta = 0,
+                startSelect = "MFI")
+  stop  <- list(rule = "length", thr = 10, alpha = alpha)
+  final <- list(method = "WL", alpha = alpha)
   test  <- list(
     method = "BM",
     itemSelect = "bOpt",

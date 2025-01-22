@@ -71,6 +71,7 @@ generate_data_scenario3 <- function(b0 = -1,
   #include parameter for level of ME info: individual-level vs. variable-level?
   #include parameter for true ME info vs. aggregated/approximate ME info?
   me <- match.arg(me)
+  read_item_banks()
   bat_me_tab <- tibble(
     no_items = c(5, 10, 25, 41),
     me = c(1.52, 1, 0.65, 0.49),

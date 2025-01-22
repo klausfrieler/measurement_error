@@ -123,7 +123,7 @@ simu_def_full_3 <- expand_grid(
   scenario = c(3),
   n_batch = 50,
   error_types = c("heteroscedastic"),
-  measurement_errors = c("low", "medium", "high", "very high"),
+  measurement_errors = c("low", "medium", "high", "very_high"),
   me_diffs = c(0),
   methods = c("no_correction", "outlier_exclusion", "weighting", "LV", "MI", "simex")
 )

@@ -211,7 +211,6 @@ load_simulations <- function(){
     messagef("Reading: %s...", fname)
     x <- readRDS(fname)
     obj_name <- basename(fname) %>% tools::file_path_sans_ext() %>% janitor::make_clean_names()
-    browser()
     assign(obj_name, x, globalenv())
   }
 }

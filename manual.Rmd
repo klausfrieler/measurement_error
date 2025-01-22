@@ -10,6 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 source("ME_simulator.R")
 ```
 
+## General
 
 This R project allows to simulate four different types  of measurement error (classical, differential, heteroscedastic, systematic) and how it effects the coefficient estimates in a simple linear regression model with two predictors. Additional, it presents  four different methods for correcting the measurement error (ME): A Latent Variable Model approach (LV), multiple imputation (MI), SIMEX (SMX), and a simple outlier exclusion (OE), and of course without any correction. We further have two scenarios, one where the ME only affects one predictor (scenario 1) and one where it affects both (scenario 2).
 
@@ -51,9 +52,26 @@ stats <- mesim$diagnostics(alpha = .7)
 
 The object can also be conveniently be saved and restored.
 
-```{r savin}
+```{r saving}
 mesim$save("my_sim.rds")
 
 ```
+
+## Running simulations
+To reproduce our simulations, you need to source ``simulations_main.R`` then type
+
+```{r run_simulations }
+source("simulations_main.R")
+#not run 
+#run_simulations()
+```
+
+This will take a while and save all created simulations in the sub-folder ``simulations``. These can reloaded, once the simulation have been run with 
+
+```{r load_simulations }
+load_simulations()
+scenario1_n_50$diagnostics(max_se = .1)
+```
+which will load and add all simulations objects in the `` simulations`` folder to the global workspace.
 
 Have fun!

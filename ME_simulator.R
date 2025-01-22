@@ -7,6 +7,7 @@ library(tidyverse)
 
 source("scenario1.R")
 source("scenario2.R")
+source("scenario3.R")
 
 messagef <- function(...) message(sprintf(...))
 scale_ <- function(x) as.numeric(scale(x))

@@ -1,5 +1,7 @@
 library(rempsyc)
 library(flextable)
+source("ME_simulator.R")
+
 diagnostics_1 <- function(simul_data,
                           metric = "rel_error",
                           coef = c("all", "b0", "b1", "b2"),

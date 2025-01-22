@@ -163,7 +163,7 @@ ground_truth <- list(
 ### Scenario 1
 run_simulations <- function(scenarios = c(1, 2, 3), id = "scenario", config = simu_def, save_singles = T){
   ret <- map_dfr(scenarios, function(sc) {
-    
+    messagef("Running scenario: %s ...", sc)
     gt <- ground_truth[[sprintf("scenario%d", sc)]]
     def <- config %>%  filter(scenario == sc)
     n_batch <- def$n_batch[1]
@@ -173,6 +173,7 @@ run_simulations <- function(scenarios = c(1, 2, 3), id = "scenario", config = si
       me <- as.numeric(me)
     }
     map_dfr(def$n_samples, function(n) {
+      messagef("   ... with sample size: %d ...", n)
       simulator <- ME_simulator$new(
         scenario = sc,
         n_sample = n,

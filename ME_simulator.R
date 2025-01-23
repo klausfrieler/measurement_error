@@ -208,6 +208,7 @@ ME_simulator <- R6::R6Class("ME_simulator",
                                         map_dfr(1:self$n_batch, function(i) {
                                           #simulation
                                           #rowser()
+                                          messagef("************* BATCH: %d ***********", i)
                                           #analysis methods and evaluation, i.e. comparison of coefficients to ground truth from simulation
                                           df <- simulated_data[simulated_data$batch == i, ] %>% select(-batch)
                                           #browser()

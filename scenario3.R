@@ -114,7 +114,7 @@ generate_data_scenario3 <- function(b0 = -1,
     
     #MIQ scores
     xt <- rnorm(n = n, 0, 1)
-    x_tmp <- catR::simulateRespondents(
+    x_tmp <- suppressMessages(catR::simulateRespondents(
       thetas = xt ,
       itemBank = miq_ib,
       start = start,
@@ -125,13 +125,14 @@ generate_data_scenario3 <- function(b0 = -1,
       ),
       test = test,
       final = final
-    )
+    ))
+    
     x <- x_tmp$final.values.df$estimated.theta
     x_se <- x_tmp$final.values.df$final.SE
     
     yt <- b0 + b1 * xt + b2 * zt
     #yt <- rnorm(n = n_sample, 0, 1)
-    y_tmp <- catR::simulateRespondents(
+    y_tmp <- suppressMessages(catR::simulateRespondents(
       thetas = yt ,
       itemBank = bat_ib,
       start = start,
@@ -142,7 +143,7 @@ generate_data_scenario3 <- function(b0 = -1,
       ),
       test = test,
       final = final
-    )
+    ))
     y <- y_tmp$final.values.df$estimated.theta
     y_se <- y_tmp$final.values.df$final.SE
     
@@ -251,17 +252,17 @@ get_coefs_scenario3 <- function(df, method,  measurement_error_level){
     
     m <- sprintf(m, r.x, r.lx, r.y, r.ly, r.z, r.lz)
     
-    fit <- sem(
+    fit <- suppressWarnings(sem(
       m,
       data = df,
       estimator = "MLR",
       meanstructure = T,
       rstarts = 5,
       optim.dx.tol = 0.001
-    )
+    ))
     #browser()
     #print(parameterEstimates(fit))
-    coefs <- parameterEstimates(fit)[c(17, 10, 11), c("label", "est", "se")] %>% as_tibble()
+    coefs <- suppressWarnings(parameterEstimates(fit)[c(17, 10, 11), c("label", "est", "se")] %>% as_tibble())
     coefs <- coefs %>%
       select(term = label, value = est, se) %>%
       mutate(term = c("b0", "b1", "b2"))

@@ -172,7 +172,7 @@ run_simulations <- function(scenarios = c(1, 2, 3), id = "scenario", config = si
     if(sc != 3){
       me <- as.numeric(me)
     }
-    map_dfr(def$n_samples, function(n) {
+    map_dfr(unique(def$n_samples), function(n) {
       messagef("   ... with sample size: %d ...", n)
       simulator <- ME_simulator$new(
         scenario = sc,

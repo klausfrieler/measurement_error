@@ -161,7 +161,11 @@ ground_truth <- list(
 
 
 ### Scenario 1
-run_simulations <- function(scenarios = c(1, 2, 3), id = "scenario", config = simu_def, save_singles = T){
+run_simulations <- function(scenarios = c(1, 2, 3), 
+                            id = "test",
+                            config = simu_def, 
+                            save_singles = T,
+                            keep_raw = FALSE){
   ret <- map_dfr(scenarios, function(sc) {
     messagef("Running scenario: %s ...", sc)
     gt <- ground_truth[[sprintf("scenario%d", sc)]]
@@ -186,7 +190,16 @@ run_simulations <- function(scenarios = c(1, 2, 3), id = "scenario", config = si
         error_types = def %>% pull(error_types) %>% unique(),
         measurement_errors = me,
       )
-      simulator$run(seed = g_seed)
+      if(sc == 3 && n > 1000){
+        btd <- readRDS("simulations/bootstrap_data_scenario3.rds")$simulated_data
+        simulator$run(seed = g_seed, 
+                      keep_raw = keep_raw, 
+                      bootstrap_data = btd)
+        
+      }
+      else{
+        simulator$run(seed = g_seed, keep_raw = keep_raw)
+      }
       if(save_singles){
         fname <- sprintf("%s/%s%d_n=%d.rds", sim_dir, id, sc, n)
         simulator$save(fname)

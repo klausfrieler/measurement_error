@@ -199,7 +199,8 @@ ME_simulator <- R6::R6Class("ME_simulator",
                                           filter(error_type == et, 
                                                  measurement_error == me_raw) %>% 
                                           sample_n(self$n_sample *self$n_batch, replace = T) %>% 
-                                          mutate(batch = rep(1:self$n_batch, each = self$n_sample))
+                                          mutate(batch = rep(1:self$n_batch, each = self$n_sample)) %>% 
+                                          select(-c(error_type, measurement_error))
 
                                       }
                                       else{

@@ -1,4 +1,5 @@
 ## Scenario 3
+source("my_TSI.R")
 
 read_item_banks <- function() {
   bat_ib <- read.csv("data/BAT_item_bank.csv")
@@ -291,7 +292,7 @@ get_coefs_scenario3 <- function(df, method,  measurement_error_level){
   
   else if (method == "MI") {
     tryCatch({
-      mice.dfs = TSI(
+      mice.dfs = my_TSI(
         df %>% select(-c(xt, yt, zt)),
         os_names = c("y", "x", "z"),
         se_names = c("y_se", "x_se", "z_se"),
@@ -299,7 +300,7 @@ get_coefs_scenario3 <- function(df, method,  measurement_error_level){
         score_types = "ML",
         separated = T,
         mice_args = c(
-          m = 50,
+          m = 5,
           maxit = 10,
           printFlag = F
         )
@@ -336,6 +337,7 @@ get_coefs_scenario3 <- function(df, method,  measurement_error_level){
   else{
     stop(sprintf("Unknown method: %s", method))
   }
+  browser()
   coefs 
 }
   

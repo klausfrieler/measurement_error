@@ -236,7 +236,6 @@ ME_simulator <- R6::R6Class("ME_simulator",
                                              measurement_error_raw = me_raw)
                                   })
                                   if(self$scenario == 3){
-                                    browser()
                                     self$results <- self$results %>% 
                                       mutate(measurement_error = factor(measurement_error, 
                                                                         levels = scenario3_me_levels))

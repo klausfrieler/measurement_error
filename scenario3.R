@@ -50,6 +50,19 @@ read_item_banks <- function() {
 # }
 
 scenario3_me_levels <- c("low", "medium", "high", "very_high")
+my_simulate_respondents <- function(thetas, item_bank, start, stop, test, final) {
+  map_dfr(1:length(thetas), function(i) {
+    ret <- catR::randomCAT(
+      trueTheta = thetas[i],
+      itemBank = item_bank,
+      start = start,
+      stop = stop,
+      test = test,
+      final = final
+    )
+    tibble(estimated_theta = ret$thFinal, final_se = ret$seFinal)
+  })
+}
 
 generate_data_scenario3 <- function(b0 = -1,
                                     b1 = 0.5,
@@ -114,9 +127,10 @@ generate_data_scenario3 <- function(b0 = -1,
     
     #MIQ scores
     xt <- rnorm(n = n, 0, 1)
-    x_tmp <- suppressMessages(catR::simulateRespondents(
+    tictoc::tic()
+    x_tmp <- my_simulate_respondents(
       thetas = xt ,
-      itemBank = miq_ib,
+      item_bank = miq_ib,
       start = start,
       stop = list(
         rule = "length",
@@ -125,16 +139,19 @@ generate_data_scenario3 <- function(b0 = -1,
       ),
       test = test,
       final = final
-    ))
-    
-    x <- x_tmp$final.values.df$estimated.theta
-    x_se <- x_tmp$final.values.df$final.SE
+    )
+    tictoc::toc(func.toc= function(tic, toc, msg){
+      sprintf("MIQ: %.3f elapsed", toc - tic)
+    })
+    x <- x_tmp$estimated_theta
+    x_se <- x_tmp$final_se
     
     yt <- b0 + b1 * xt + b2 * zt
     #yt <- rnorm(n = n_sample, 0, 1)
-    y_tmp <- suppressMessages(catR::simulateRespondents(
+    tictoc::tic()
+    y_tmp <- my_simulate_respondents(
       thetas = yt ,
-      itemBank = bat_ib,
+      item_bank = bat_ib,
       start = start,
       stop = list(
         rule = "length",
@@ -143,9 +160,13 @@ generate_data_scenario3 <- function(b0 = -1,
       ),
       test = test,
       final = final
-    ))
-    y <- y_tmp$final.values.df$estimated.theta
-    y_se <- y_tmp$final.values.df$final.SE
+    )
+    tictoc::toc(func.toc= function(tic, toc, msg){
+      sprintf("BAt: %.3f elapsed", toc - tic)
+    })
+    
+    y <- y_tmp$estimated_theta
+    y_se <- y_tmp$final_se
     
     df <- tibble(
       yt = yt,

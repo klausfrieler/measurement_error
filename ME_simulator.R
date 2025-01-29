@@ -228,8 +228,6 @@ ME_simulator <- R6::R6Class("ME_simulator",
                                             #browser()
                                             ret
                                           })
-                                          #messagef("************* END BATCH ***********")
-                                          
                                         })
                                       })
                                     })  %>%

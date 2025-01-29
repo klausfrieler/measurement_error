@@ -97,7 +97,7 @@ diagnostics_2 <- function(simul_data,
   stats
 }
 #error_types = c("classical", "systematic", "heteroscedastic", "differential"),
-
+g_seed <- 666
 simu_def_full <- expand_grid(
   n_samples = c(50, 500, 5000),
   scenario = c(1, 2),
@@ -186,7 +186,7 @@ run_simulations <- function(scenarios = c(1, 2, 3), id = "scenario", config = si
         error_types = def %>% pull(error_types) %>% unique(),
         measurement_errors = me,
       )
-      simulator$run()
+      simulator$run(seed = g_seed)
       if(save_singles){
         fname <- sprintf("%s/%s%d_n=%d.rds", sim_dir, id, sc, n)
         simulator$save(fname)

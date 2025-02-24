@@ -309,7 +309,8 @@ get_coefs_scenario3 <- function(df, method,  measurement_error_level){
       coefs <- pool(with(mice.dfs, lm(true_y ~ true_x + true_z))) %>%
         summary() %>%
         select(term, value = estimate, se = std.error) %>%
-        mutate(term = c("b0", "b1", "b2"))
+        mutate(term = c("b0", "b1", "b2")) %>% 
+        as_tibble()
     }, error = function(e) {
       coefs <<- tibble(
         term = c("b0", "b1", "b2"),
@@ -337,7 +338,7 @@ get_coefs_scenario3 <- function(df, method,  measurement_error_level){
   else{
     stop(sprintf("Unknown method: %s", method))
   }
-  browser()
+  #browser()
   coefs 
 }
   

@@ -94,12 +94,6 @@ filter_solutions <- function(d, N, method){
 
 s1_all <- readRDS("simulations/scenario1_all.rds")
 
-s1_unq_sol <- unique(s1_all[,c("N","batch","error_type","measurement_error","measurement_error_diff","method")])
-s1_unq_sol$solution_index <- 1:nrow(s1_unq_sol)
-s1_all <- merge(s1_all, s1_unq_sol)
-
-s1_clean <- filter_solutions(s1_all, N=c(50,500,5000),method=c("LV","MI","simex","outlier_exclusion"))
-
 #Figure 1
 png("figures/s1_all_allCoefs.png")
 diagnostics_1(s1_all[s1_all$measurement_error_diff==0,],metric="rel_error")
@@ -117,15 +111,19 @@ T_A1 <- s1_all[s1_all$measurement_error_diff==0,] %>%
 nT_A1 <- nice_table(T_A1)
 #flextable::save_as_docx(nT_A1, path = "S1_SEs_by_MExNxMethod_table.docx")
 
-#Compute SE threshold for filtering bad results
-#se_cutoff <- max(s1_all[s1_all$method=="no_correction","se"])
-#s1_clean <- na.omit(s1_all[s1_all$se<=se_cutoff,])
-#s1_bad <- na.omit(s1_all[s1_all$se>se_cutoff,])
-#table(s1_bad$method)/sum(table(s1_bad$method))
+s1_unq_sol <- unique(s1_all[,c("N","batch","error_type","measurement_error","measurement_error_diff","method")])
+s1_unq_sol$solution_index <- 1:nrow(s1_unq_sol)
+s1_all <- merge(s1_all, s1_unq_sol)
+s1_clean <- filter_solutions(s1_all, N=c(50,500,5000),method=c("LV","MI","simex","outlier_exclusion"))
+
+(nrow(s1_all) - nrow(s1_clean)) 
+(nrow(s1_all) - nrow(s1_clean)) / nrow(s1_all)
+bad_solutions <- subset(s1_all, !(solution_index %in% s1_clean$solution_index), "method")
+table(bad_solutions)/sum(table(bad_solutions))
 
 #Figure 3
 png("figures/s1_all_allCoefs_clean.png")
-diagnostics_1(s1_all[s1_all$measurement_error_diff==0,],metric="rel_error")
+diagnostics_1(s1_clean[s1_clean$measurement_error_diff==0,],metric="rel_error")
 dev.off()
 
 #Figures 4a-c
@@ -159,6 +157,11 @@ s2_all <- merge(s2_all, s2_unq_sol)
 
 s2_clean <- filter_solutions(s2_all, N=c(50,500,5000),method=c("LV","MI","simex","outlier_exclusion"))
 
+(nrow(s2_all) - nrow(s2_clean)) 
+(nrow(s2_all) - nrow(s2_clean)) / nrow(s2_all)
+bad_solutions_2 <- subset(s2_all, !(solution_index %in% s2_clean$solution_index), "method")
+table(bad_solutions_2)/sum(table(bad_solutions_2))
+
 #Figures 5a-f
 png("figures/s2_n=50_b1_clean.png")
 diagnostics_2(s2_clean[s2_clean$N==50,], coef = "b1", x_var = "measurement_error_diff", x_label = "ME Difference", color_var = "measurement_error_raw", color_label = "ME")
@@ -186,6 +189,51 @@ dev.off()
 
 
 ### Scenario 3
+s3_n50 <- readRDS("simulations/scenario3_n=50.rds")
+
+s3_n500 <- readRDS("simulations/scenario3_n=500.rds")
+s3_n5000 <- readRDS("simulations/scenario3_n=5000.rds")
+
+s3_all <- merge(s3_50, s3_500)
+s3_all <- merge(s3_all, s3_5000)
+
+s3_all <- readRDS("simulations/scenario3_all.rds")
+
+s2_unq_sol <- unique(s2_all[,c("N","batch","error_type","measurement_error","measurement_error_diff","method")])
+s2_unq_sol$solution_index <- 1:nrow(s2_unq_sol)
+s2_all <- merge(s2_all, s2_unq_sol)
+
+s2_clean <- filter_solutions(s2_all, N=c(50,500,5000),method=c("LV","MI","simex","outlier_exclusion"))
+
+(nrow(s2_all) - nrow(s2_clean)) 
+(nrow(s2_all) - nrow(s2_clean)) / nrow(s2_all)
+bad_solutions_2 <- subset(s2_all, !(solution_index %in% s2_clean$solution_index), "method")
+table(bad_solutions_2)/sum(table(bad_solutions_2))
+
+#Figures 5a-f
+png("figures/s2_n=50_b1_clean.png")
+diagnostics_2(s2_clean[s2_clean$N==50,], coef = "b1", x_var = "measurement_error_diff", x_label = "ME Difference", color_var = "measurement_error_raw", color_label = "ME")
+dev.off()
+
+png("figures/s2_n=50_b2_clean.png")
+diagnostics_2(s2_clean[s2_clean$N==50,], coef = "b2", x_var = "measurement_error_diff", x_label = "ME Difference", color_var = "measurement_error_raw", color_label = "ME")
+dev.off()
+
+png("figures/s2_n=500_b1_clean.png")
+diagnostics_2(s2_clean[s2_clean$N==500,], coef = "b1", x_var = "measurement_error_diff", x_label = "ME Difference", color_var = "measurement_error_raw", color_label = "ME")
+dev.off()
+
+png("figures/s2_n=500_b2_clean.png")
+diagnostics_2(s2_clean[s2_clean$N==500,], coef = "b2", x_var = "measurement_error_diff", x_label = "ME Difference", color_var = "measurement_error_raw", color_label = "ME")
+dev.off()
+
+png("figures/s2_n=5000_b1_clean.png")
+diagnostics_2(s2_clean[s2_clean$N==5000,], coef = "b1", x_var = "measurement_error_diff", x_label = "ME Difference", color_var = "measurement_error_raw", color_label = "ME")
+dev.off()
+
+png("figures/s2_n=5000_b2_clean.png")
+diagnostics_2(s2_clean[s2_clean$N==5000,], coef = "b2", x_var = "measurement_error_diff", x_label = "ME Difference", color_var = "measurement_error_raw", color_label = "ME")
+dev.off()
 
 ###### Data simulations
 
@@ -216,6 +264,27 @@ dev.off()
 #s2_n50 <- ME_simulator$new(scenario = 2, n_sample = 50, n_batch=50, b0 = 1, b1 = 0.4, b2 = 0.2)
 #s2_n50$run()
 #s2_n50$save("s2_n50.rds")
+
+# sample size N = 500
+#s2_n500 <- ME_simulator$new(scenario = 2, n_sample = 500, n_batch=50, b0 = 1, b1 = 0.4, b2 = 0.2)
+#s2_n500$run()
+#s2_n500$save("s2_n500.rds")
+
+# sample size N = 5000
+#s2_n5000 <- ME_simulator$new(scenario = 2, n_sample = 5000, n_batch=50, b0 = 1, b1 = 0.4, b2 = 0.2)
+#s2_n5000$run()
+#s2_n5000$save("s2_n5000.rds")
+
+### Scenario 3
+# sample size N = 50
+s3_n50 <- ME_simulator$new(scenario = 3, n_sample = 50, n_batch=50, b0 = 1, b1 = 0.4, b2 = 0.2, error_types=c("heteroscedastic"), measurement_errors = c("very_high","high","medium","low"))
+s3_n50$run()
+saveRDS(s3_n50$results,file = "simulations/scenario3_n=50.rds")
+
+s3_n5000 <- ME_simulator$new(scenario = 3, n_sample = 5000, n_batch=2, b0 = 1, b1 = 0.4, b2 = 0.2, error_types=c("heteroscedastic"), measurement_errors = c("very_high","high","medium","low"))
+s3_n5000$run()
+saveRDS(s3_n5000$results,file = "simulations/scenario3_n=5000.rds")
+
 
 # sample size N = 500
 #s2_n500 <- ME_simulator$new(scenario = 2, n_sample = 500, n_batch=50, b0 = 1, b1 = 0.4, b2 = 0.2)

@@ -115,16 +115,15 @@ generate_data_scenario3 <- function(b0 = -1,
     #BAT scores
     
     #GMS.MT scores
-    zt <- scale(runif(n = n, min = 1, max = 7)) %>% as.numeric()
-    z_se <- rtruncnorm(
+    zt <- runif(n = n, min = 1, max = 7) %>% as.numeric()
+    z <- rtruncnorm(
       n = n,
       a = 1,
       b = 7,
-      mean = 4,
-      #@daniel what to use here?!
-      sd = sd(zt) #bat_me_tab$me[i] * sd(xt)
+      mean = zt,
+      sd = bat_me_tab[bat_me_tab$level==me,]$me * sd(zt) 
     ) %>% as.numeric()
-    z <- zt + z_se
+    z_se <- sd(z)
     
     #MIQ scores
     xt <- rnorm(n = n, 0, 1)
@@ -163,7 +162,7 @@ generate_data_scenario3 <- function(b0 = -1,
       final = final
     )
     tictoc::toc(func.toc= function(tic, toc, msg){
-      sprintf("BAt: %.3f elapsed", toc - tic)
+      sprintf("BAT: %.3f elapsed", toc - tic)
     })
     
     y <- y_tmp$estimated_theta
@@ -191,7 +190,7 @@ generate_data_scenario3 <- function(b0 = -1,
 scenario3_methods <- c("no_correction", "outlier_exclusion", "weighting", "LV", "MI", "simex")
 
 get_coefs_scenario3 <- function(df, method,  measurement_error_level){
-  messagef("Scenario3: correcting with method '%s' for error level '%s'", method, measurement_error_level)
+  #messagef("Scenario3: correcting with method '%s' for error level '%s'", method, measurement_error_level)
   if (method == "no_correction") {
     coefs <- broom::tidy(lm(y ~ x + z, data = df)) %>% 
       select(term, value = estimate, se = std.error) %>% 
@@ -300,7 +299,7 @@ get_coefs_scenario3 <- function(df, method,  measurement_error_level){
         score_types = "ML",
         separated = T,
         mice_args = c(
-          m = 5,
+          m = 50,
           maxit = 10,
           printFlag = F
         )

@@ -25,7 +25,7 @@ ME_simulator <- R6::R6Class("ME_simulator",
                                 me_diffs = c(0, 0.1, 0.5),
                                 methods = c("no_correction",
                                              "outlier_exclusion",
-                                             #"Weighting",
+                                             "weighting",
                                              "LV",
                                              "MI",
                                              "simex"),
@@ -52,7 +52,7 @@ ME_simulator <- R6::R6Class("ME_simulator",
                                                       scenario = c(1, 2, 3),
                                                       methods = c("no_correction",
                                                                   "outlier_exclusion",
-                                                                  #"Weighting",
+                                                                  "weighting",
                                                                   "LV",
                                                                   "MI",
                                                                   "simex"),
@@ -80,7 +80,7 @@ ME_simulator <- R6::R6Class("ME_simulator",
                                     }
                                     self$error_types <- "heteroscedastic"
                                     if(any(!is.character(measurement_errors))){
-                                      browser()
+                                      #browser()
                                       stop("Scenario 3 uses categorial error levels (very_high, high, medium and low)")
                                     }
                                     bad_levels <- setdiff(measurement_errors, scenario3_me_levels)
@@ -223,8 +223,8 @@ ME_simulator <- R6::R6Class("ME_simulator",
                                         
                                         map_dfr(1:self$n_batch, function(i) {
                                           #simulation
-                                          #rowser()
-                                          messagef("************* BATCH: %d ***********", i)
+                                          #browser()
+                                          #messagef("************* BATCH: %d ***********", i)
                                           #analysis methods and evaluation, i.e. comparison of coefficients to ground truth from simulation
                                           df <- simulated_data[simulated_data$batch == i, ] %>% select(-batch)
                                           #browser()

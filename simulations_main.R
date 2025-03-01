@@ -128,6 +128,16 @@ simu_def_full_3 <- expand_grid(
   methods = c("no_correction", "outlier_exclusion", "weighting", "LV", "MI", "simex")
 )
 
+simu_def_test_3_2 <- expand_grid(
+  n_samples = c(50),
+  scenario = c(3),
+  n_batch = 2,
+  error_types = c("heteroscedastic"),
+  measurement_errors = c("low", "medium", "high", "very_high"),
+  me_diffs = c(0),
+  methods = c("no_correction", "outlier_exclusion", "weighting", "LV", "MI", "simex")
+)
+
 simu_def_test_12 <- expand_grid(
   n_samples = c(50, 500),
   scenario = c(1, 2),

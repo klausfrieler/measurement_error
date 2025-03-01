@@ -116,15 +116,36 @@ generate_data_scenario3 <- function(b0 = -1,
     
     #GMS.MT scores
     zt <- runif(n = n, min = 1, max = 7) %>% as.numeric()
+    
+    #use always empirical reliability of .8 as sd for z
+    s  <- .8
+    
+    #or dependent on zt, but this increases reliability (due to the truncnorm, I guess)
+    # rel <- .8
+    # s <- (1- rel)/rel * sd(zt)
+    
     z <- rtruncnorm(
       n = n,
       a = 1,
       b = 7,
       mean = zt,
-      sd = bat_me_tab[bat_me_tab$level==me,]$me * sd(zt) 
+      sd = s
     ) %>% as.numeric()
-    z_se <- sd(z)
-    
+    #browser()
+    # for MI z_se cannot be constant. So, use batch-wise constant sds... 
+    # z_se <- c()
+    # for(i in 0:(n_batch-1)){
+    #   z_se <- c(z_se, rep(sd(z[i * n_sample + 1:n_sample]), n_sample) )
+    # }
+    # OR LOO SD
+    #z_se <- sapply(1:n, function(i) sd(z[-i]))
+    #or add some noise
+    #browser()
+    #z_se <- sqrt(mean((z - zt)^2) + rnorm(length(z), 0, .8)^2)
+    # OR: pointwise absolute error (seems to work!)
+    z_se <- sqrt((z - zt)^2)
+    #if(me == "very_high") browser()
+    #z_se <- sd(z)
     #MIQ scores
     xt <- rnorm(n = n, 0, 1)
     tictoc::tic()
@@ -230,7 +251,8 @@ get_coefs_scenario3 <- function(df, method,  measurement_error_level){
   else if (method == "weighting") {
     #inv_err <- mean(1 / df$y_se^2, 1 / df$x_se^2, 1 / df$z_se^2)
     #inv_err <- rep(mean(1 / df$z_se ^ 2), nrow(df))
-    inv_err <- 1 / df$x_se ^ 2
+    #inv_err <- 1 / df$x_se ^ 2
+    inv_err <- 1 / sqrt(df$x_se ^ 2 + df$z_se ^ 2)
     coefs <- broom::tidy(lm(y ~ x + z, weights = inv_err, data = df)) %>% 
       select(term, value = estimate, se = std.error) %>% 
       mutate(term = c("b0", "b1", "b2"))
@@ -311,6 +333,7 @@ get_coefs_scenario3 <- function(df, method,  measurement_error_level){
         mutate(term = c("b0", "b1", "b2")) %>% 
         as_tibble()
     }, error = function(e) {
+      warning(sprintf("MSI error for error level '%s'", measurement_error_level))
       coefs <<- tibble(
         term = c("b0", "b1", "b2"),
         value = c(NA, NA, NA),

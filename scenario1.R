@@ -54,7 +54,7 @@ generate_data_scenario1 <- function(b0, b1, b2, error_type, me = 1, n_sample = 5
     x <- xt + xe
   }
   else{
-    stop(sprinf("Unknow error type: %s", error_type))
+    stop(sprintf("Unknow error type: %s", error_type))
   }
   #ye <- rnorm(n, 0, 2*sqrt(me))
   yt <- b0 + b1 * xt + b2 * zt

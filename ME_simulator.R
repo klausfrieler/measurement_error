@@ -38,6 +38,7 @@ ME_simulator <- R6::R6Class("ME_simulator",
                                 results = NULL,
                                 result_stats = NULL,
                                 simulated_data = NULL,
+                                qplot = NULL,
                                 
                                 initialize = function(b0 = 1,
                                                       b1 = 0.4,
@@ -71,6 +72,7 @@ ME_simulator <- R6::R6Class("ME_simulator",
                                   self$results <- NULL
                                   self$result_stats <- NULL
                                   self$simulated_data <- NULL
+                                  self$qplot <- NULL
                                   #if(scenario == 2){
                                   #  self$methods <- setdiff(self$methods, "MI")
                                   #}
@@ -85,7 +87,6 @@ ME_simulator <- R6::R6Class("ME_simulator",
                                     }
                                     bad_levels <- setdiff(measurement_errors, scenario3_me_levels)
                                     if(length(bad_levels) > 1){
-                                      browser()
                                       stop("Scenario 3 uses categorial error levels (very_high, high, medium and low)")
                                     }
                                     self$measurement_errors <- measurement_errors
@@ -178,7 +179,6 @@ ME_simulator <- R6::R6Class("ME_simulator",
                                 
                                 run  = function(fname = NULL, seed = NULL, keep_raw = FALSE, bootstrap_data = NULL) {
                                   #sample size (n) is a parameter, possible values are 50, 500, 5000; but no separate loop, instead run simulator several times
-
                                   if(!is.null(seed)){
                                     set.seed(seed)
                                   }
@@ -188,30 +188,30 @@ ME_simulator <- R6::R6Class("ME_simulator",
                                   self$results <- 
                                     map_dfr(self$measurement_errors, function(me_raw) {
                                       map_dfr(self$error_types, function(et) {
-                                      if(self$scenario != 3){
-                                        messagef("Simulating data with '%s' error (me_raw = %.2f)...", et, me_raw)
-                                      }
-                                      else{
-                                        messagef("Simulating data with '%s' error (me_raw = %s)...", et, me_raw)
-                                      }
-                                      if(!is.null(bootstrap_data)){
-                                        simulated_data <- bootstrap_data %>% 
-                                          filter(error_type == et, 
-                                                 measurement_error == me_raw) %>% 
-                                          sample_n(self$n_sample *self$n_batch, replace = T) %>% 
-                                          mutate(batch = rep(1:self$n_batch, each = self$n_sample)) %>% 
-                                          select(-c(error_type, measurement_error))
-
-                                      }
-                                      else{
-                                        simulated_data <- self$generate_data(error_type = et, me = me_raw)
-                                        if(keep_raw){
-                                          self$simulated_data <- bind_rows(self$simulated_data,
-                                                                           simulated_data %>% 
-                                                                             mutate(error_type = et, 
-                                                                                    measurement_error = me_raw))
+                                        if(self$scenario != 3){
+                                          messagef("Simulating data with '%s' error (me_raw = %.2f)...", et, me_raw)
                                         }
-                                      }
+                                        else{
+                                          messagef("Simulating data with '%s' error (me_raw = %s)...", et, me_raw)
+                                        }
+                                        if(!is.null(bootstrap_data)){
+                                          simulated_data <- bootstrap_data %>% 
+                                            filter(error_type == et, 
+                                                   measurement_error == me_raw) %>% 
+                                            sample_n(self$n_sample *self$n_batch, replace = T) %>% 
+                                            mutate(batch = rep(1:self$n_batch, each = self$n_sample)) %>% 
+                                            select(-c(error_type, measurement_error))
+  
+                                        }
+                                        else{
+                                          simulated_data <- self$generate_data(error_type = et, me = me_raw)
+                                          if(keep_raw){
+                                            self$simulated_data <- bind_rows(self$simulated_data,
+                                                                             simulated_data %>% 
+                                                                               mutate(error_type = et, 
+                                                                                      measurement_error = me_raw))
+                                          }
+                                        }
                                       map_dfr(self$me_diffs, function(md) {
                                         if(self$scenario != 3){
                                           me <- me_raw * (1 +  md)
@@ -352,6 +352,7 @@ ME_simulator <- R6::R6Class("ME_simulator",
                                       q <- q + scale_y_continuous(labels = scales::percent)
                                     }
                                     print(q)
+                                    self$qplot <- q
                                   }
                                   if(is.null(self$result_stats)){
                                     self$get_stats()

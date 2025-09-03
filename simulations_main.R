@@ -173,7 +173,7 @@ ground_truth <- list(
 ### Scenario 1
 run_simulations <- function(scenarios = c(1, 2, 3), 
                             id = "test",
-                            config = simu_def, 
+                            config = simu_def_full, 
                             save_singles = T,
                             keep_raw = FALSE){
   ret <- map_dfr(scenarios, function(sc) {
@@ -255,8 +255,9 @@ make_tables <- function(simulations, with_save = F){
 }
 
 make_plots <- function(sim_results, with_save = T, id = "test"){
+  browser()
   if(is(sim_results, "ME_simulator")){
-    sim_results <- sim_resuilts$results
+    sim_results <- sim_results$results
   }
   if("status" %in% names(sim_results)){
     dat_clean <- sim_results %>% filter(status == "clean")

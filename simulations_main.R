@@ -158,6 +158,16 @@ simu_def_test_3 <- expand_grid(
   methods = c("no_correction")
 )
 
+simu_def_test_server <- expand_grid(
+  n_samples = c(50, 500),
+  scenario = c(3),
+  n_batch = 20,
+  error_types = c("heteroscedastic"),
+  measurement_errors = c("low", "medium", "high", "very_high"),
+  me_diffs = c(0),
+  methods = c("no_correction", "outlier_exclusion", "weighting", "LV", "MI", "simex")
+)
+
 simu_def_full <- bind_rows(simu_def_full_12, simu_def_full_3)
 simu_def_test <- bind_rows(simu_def_test_12, simu_def_test_3)
 sim_dir <- "simulations"
@@ -173,7 +183,7 @@ ground_truth <- list(
 ### Scenario 1
 run_simulations <- function(scenarios = c(1, 2, 3), 
                             id = "test",
-                            config = simu_def_full, 
+                            config = simu_def_test, 
                             save_singles = T,
                             keep_raw = FALSE){
   ret <- map_dfr(scenarios, function(sc) {

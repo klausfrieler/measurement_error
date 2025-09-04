@@ -181,7 +181,7 @@ get_coefs_scenario2 <- function(df, method, measurement_error){
         ),
         separated = F,
         mice_args = c(
-          m = 50,
+          m = 20,
           maxit = 10,
           printFlag = F
         )

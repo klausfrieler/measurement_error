@@ -321,7 +321,7 @@ get_coefs_scenario3 <- function(df, method,  measurement_error_level){
         score_types = "ML",
         separated = T,
         mice_args = c(
-          m = 50,
+          m = 20,
           maxit = 10,
           printFlag = F
         )

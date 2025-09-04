@@ -134,7 +134,7 @@ get_coefs_scenario1 <- function(df, method, measurement_error){
       reliability = c("x" = 1 / (1 + measurement_error ^ 2)),
       separated = F,
       mice_args = c(
-        m = 50,
+        m = 20,
         maxit = 10,
         printFlag = F
       )

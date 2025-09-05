@@ -10,7 +10,7 @@ analyze_lg_data <- function(){
   lg_dat <- lg_dat %>% filter(!is.na(BAT.score), !is.na(MIQ.score), !is.na(GMS.musical_training))
   
   ### remove all cases without a valid ID (p_id not starting with "0")
-  #lg_dat <- lg_dat %>% filter(substr(p_id, 1, 1) == "0")
+  lg_dat <- lg_dat %>% filter(substr(p_id, 1, 1) == "0")
   
   ### use each p_id only once, selecting the observation from the latest test wave or highest age
   
@@ -68,14 +68,40 @@ analyze_lg_data <- function(){
   
   
   ###weighting
-  inv_err <- (1 / (lg_dat$MIQ.error ^ 2 + (1 / lg_dat$BAT.error ^ 2))) #* (1 / lg_dat$GMS.Musical_training.error ^ 2)
+  inv_err <- (1 /sqrt(lg_dat$MIQ.error ^ 2 + lg_dat$BAT.error ^ 2)) #* (1 / lg_dat$GMS.Musical_training.error ^ 2)
   
-  coefs_w <- broom::tidy(lm(BAT.score ~ MIQ.score + GMS.musical_training, weights = inv_err, data = lg_dat)) %>% 
+  coefs_w0 <- broom::tidy(lm(BAT.score ~ MIQ.score + GMS.musical_training, weights = inv_err, data = lg_dat)) %>% 
     select(term, value = estimate, se = std.error) %>% 
     mutate(term = c("b0", "b1", "b2"),  
-           method = "weighting")
+           method = "weighting0")
+  inv_err <- (1 / (lg_dat$MIQ.error ^ 2 + lg_dat$BAT.error ^ 2)) #* (1 / lg_dat$GMS.Musical_training.error ^ 2)
   
-  coefs_w
+  coefs_w1 <- broom::tidy(lm(BAT.score ~ MIQ.score + GMS.musical_training, weights = inv_err, data = lg_dat)) %>% 
+    select(term, value = estimate, se = std.error) %>% 
+    mutate(term = c("b0", "b1", "b2"),  
+           method = "weighting1")
+
+  inv_err <- (1 / (lg_dat$MIQ.error ^ 2) * (1 / lg_dat$BAT.error ^ 2)) #* (1 / lg_dat$GMS.Musical_training.error ^ 2)
+  
+  coefs_w2 <- broom::tidy(lm(BAT.score ~ MIQ.score + GMS.musical_training, weights = inv_err, data = lg_dat)) %>% 
+    select(term, value = estimate, se = std.error) %>% 
+    mutate(term = c("b0", "b1", "b2"),  
+           method = "weighting2")
+
+  inv_err <- (1 / (lg_dat$MIQ.error ^ 2) + (1 / lg_dat$BAT.error ^ 2)) #* (1 / lg_dat$GMS.Musical_training.error ^ 2)
+  
+  coefs_w3 <- broom::tidy(lm(BAT.score ~ MIQ.score + GMS.musical_training, weights = inv_err, data = lg_dat)) %>% 
+    select(term, value = estimate, se = std.error) %>% 
+    mutate(term = c("b0", "b1", "b2"),  
+           method = "weighting3")
+  
+  inv_err <- 1 / (lg_dat$MIQ.error ^ 2) #* (1 / lg_dat$GMS.Musical_training.error ^ 2)
+  
+  coefs_w4 <- broom::tidy(lm(BAT.score ~ MIQ.score + GMS.musical_training, weights = inv_err, data = lg_dat)) %>% 
+    select(term, value = estimate, se = std.error) %>% 
+    mutate(term = c("b0", "b1", "b2"),  
+           method = "weighting4")
+  
   browser()
   ### LAVAAN  
   

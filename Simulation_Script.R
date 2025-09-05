@@ -73,6 +73,7 @@ diagnostics_2 <- function(simul_data, metric = "rel_error",
 }
 
 filter_solutions <- function(d, N, method){
+  browser()
   bad_solution <- NULL
   for(i in seq(along=N)){
     tmp_d <- d[d$N==N[i],]
@@ -85,6 +86,20 @@ filter_solutions <- function(d, N, method){
   bad_solution <- unique(bad_solution)
   d <- subset(d, !(solution_index %in% bad_solution))
   d <- d[!is.na(d$se),]
+}
+
+filter_solutions2 <- function(sim_results){
+  browser()
+  sim_results <- sim_results %>% filter(!is.na(se))
+  cutoffs <- sim_results %>% 
+    filter(method == "no_correction")  %>% 
+    group_by(n_sample) %>% 
+    summarise(se_cutoff = max(se, na.rm = T) * sqrt(1 + 1.52^2), .groups = "drop")
+  sim_results <- sim_results %>% 
+    left_join(cutoffs, by = "n_sample") %>% 
+    mutate(good = se <= se_cutoff)
+  print(sim_results %>% count(method, good))
+  sim_results %>% filter(good)
 }
 
 ### Generation of plots and tables
@@ -114,7 +129,7 @@ nT_A1 <- nice_table(T_A1)
 s1_unq_sol <- unique(s1_all[,c("N","batch","error_type","measurement_error","measurement_error_diff","method")])
 s1_unq_sol$solution_index <- 1:nrow(s1_unq_sol)
 s1_all <- merge(s1_all, s1_unq_sol)
-s1_clean <- filter_solutions(s1_all, N=c(50,500,5000),method=c("LV","MI","simex","outlier_exclusion"))
+# s1_clean <- filter_solutions(s1_all, N=c(50,500,5000),method=c("LV","MI","simex","outlier_exclusion"))
 
 (nrow(s1_all) - nrow(s1_clean)) 
 (nrow(s1_all) - nrow(s1_clean)) / nrow(s1_all)

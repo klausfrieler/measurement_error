@@ -73,10 +73,7 @@ ME_simulator <- R6::R6Class("ME_simulator",
                                   self$result_stats <- NULL
                                   self$simulated_data <- NULL
                                   self$qplot <- NULL
-                                  #if(scenario == 2){
-                                  #  self$methods <- setdiff(self$methods, "MI")
-                                  #}
-                                  if(scenario == 3){
+                                  if(self$scenario == 3){
                                     if(length(error_types) > 1 || error_types[[1]] != "heteroscedastic"){
                                       warning("For scenario 3 only heteroscedastic error available. Fixing.")
                                     }
@@ -94,7 +91,25 @@ ME_simulator <- R6::R6Class("ME_simulator",
                                   }
                                   invisible(self)
                                 },
-                                
+                                copy = function(ME_simu_obj){
+                                  self$coefficients <- ME_simu_obj$coefficients
+                                  self$error_types <- ME_simu_obj$error_types
+                                  self$methods <- ME_simu_obj$methods
+                                  self$scenario <- ME_simu_obj$scenario
+                                  self$n_sample <- ME_simu_obj$n_sample
+                                  self$n_batch <- ME_simu_obj$n_batch
+                                  self$measurement_errors <- ME_simu_obj$measurement_errors
+                                  self$me_diffs <- ME_simu_obj$me_diffs
+                                  self$verbose <- ME_simu_obj$verbose
+                                  self$seed <- ME_simu_obj$seed
+                                  self$normal <- ME_simu_obj$normal
+                                  self$results <- ME_simu_obj$results
+                                  self$result_stats <- ME_simu_obj$result_stats
+                                  self$simulated_data <- ME_simu_obj$simulated_data
+                                  self$qplot <- ME_simu_obj$qplote
+                                  invisible(self)
+                                  
+                                },
                                 print = function(...) {
                                   cat("ME Simulator: \n")
                                   cat("  Coefficients: \n", 
@@ -293,6 +308,14 @@ ME_simulator <- R6::R6Class("ME_simulator",
                                     summarise(across(all_of(metrics), mean), .groups = "drop") 
                                   
                                 },
+                                ## filter solutions with too large SE
+                                get_max_se  = function(max_relia = 1.52){
+                                  self$results %>% 
+                                    filter(!is.na(se), method == "no_correction")  %>% 
+                                    summarise(max_se = max(se, na.rm = T) * sqrt(1 + max_relia^2),
+                                              groups = "drop") %>% pull(max_se)
+                                  
+                                },
                                 #' @param metric to display on y-axis
                                 #' @param coef use all or a single coefficient
                                 #' @param x_var Use this on x-axis
@@ -320,6 +343,9 @@ ME_simulator <- R6::R6Class("ME_simulator",
                                   if(coef != "all"){
                                     simul_data <- simul_data %>% filter(name == coef)
                                   }
+                                  if(is.character(max_se)){
+                                    max_se <- self$get_max_se()
+                                  }
                                   if(!is.null(max_se)){
                                     simul_data <- simul_data %>% filter(se <= max_se)
                                     if(nrow(simul_data) == 0){
@@ -327,6 +353,7 @@ ME_simulator <- R6::R6Class("ME_simulator",
                                       return(invisible(self))
                                     }
                                   }
+                                  browser()
                                   if(!is.null(max_metric)){
                                     simul_data <- simul_data %>% filter(abs(!!sym(metric)) <= max_metric)
                                     if(nrow(simul_data) == 0){

@@ -1,5 +1,105 @@
 library(tidyverse)
 
+get_coefs_wy <- function(df, method, measurement_error){
+  if (method == "no_correction") {
+    coefs <- broom::tidy(lm(y ~ x + zt, data = df)) %>% 
+      select(term, value = estimate, se = std.error) %>% 
+      mutate(term = c("b0", "b1", "b2"))
+  }
+  else if (method == "outlier_exclusion") {
+    ol <- suppressMessages(
+      boxB(x = df$x,
+           k = 1.5,
+           method = 'resistant')$outliers)
+    tmp_data <- df
+    if (length(ol) >= 1) {
+      #coefs <- coef(lm(y ~ x + z, data = df[-ol, ]))
+      tmp_data <- df[-ol,]
+    }
+    coefs <- broom::tidy(lm(y ~ x + zt, data = tmp_data)) %>% 
+      select(term, value = estimate, se = std.error) %>% 
+      mutate(term = c("b0", "b1", "b2"))
+  }
+  
+  # if (methods[j] == "weighting") {
+  #   inv_err <- rep(mean(1 / df$xe ^ 2), nrow(df))
+  #   coefs <- coef(lm(yt ~ x + zt, weights = inv_err, data = df))
+  #   eval_w <- rbind(eval_w, eval(
+  #     coefs = coefs,
+  #     b0 = b0,
+  #     b1 = b1,
+  #     b2 = b2
+  #   ))
+  # }
+  
+  else if (method == "LV") {
+    r.lx <- 1 / (1 + measurement_error ^ 2) #compute reliability of latent variable (i.e. common variance) from measurement error
+    r.x <- 1 - r.lx    #compute unique variance from measurement error
+    
+    m <- '
+        lx =~ 1 * x
+        lx ~~ psi * lx
+        x ~~ theta * x
+        theta == psi * %s/%s
+        y ~ lx + zt
+        '
+    # theta == psi * r.x/r.lx => error variance / factor variance
+    m <- sprintf(m, r.x, r.lx)
+    
+    fit <- sem(
+      m,
+      data = df,
+      estimator = "MLR",
+      meanstructure = T
+    )
+    
+    coefs <- parameterEstimates(fit)[c(9, 4, 5), c("label", "est", "se")] %>% as_tibble()
+    coefs <- coefs %>% 
+      select(term = label, value = est, se) %>% 
+      mutate(term = c("b0", "b1", "b2"))
+    
+  }
+  else if (method == "MI") {
+    #browser()
+    mice.dfs = TSI(
+      df,
+      os_names = c("x"),
+      #se_names = c("xe"),
+      metrics = "z",
+      score_types = "CTT",
+      reliability = c("x" = 1 / (1 + measurement_error ^ 2)),
+      separated = F,
+      mice_args = c(
+        m = 20,
+        maxit = 10,
+        printFlag = F
+      )
+    )
+    #coefs <- pool(with(mice.dfs, lm(y ~ true_x + zt))) %>% pluck("pooled") %>% pluck("estimate")
+    coefs <- pool(with(mice.dfs, lm(y ~ true_x + zt))) %>%
+      summary() %>%
+      select(term, value = estimate, se = std.error) %>%
+      mutate(term = c("b0", "b1", "b2"))
+  }
+  
+  else if(method == "simex") {
+    model_naive <- lm(y ~ x + zt, data = df)
+    model_simex <- simex(model_naive, SIMEXvariable = "x", B = 200, 
+                         asymptotic = F, 
+                         measurement.error = measurement_error)
+    sum <- summary(model_simex)$coefficients$jackknife
+    coefs <- as.data.frame(sum) %>%  
+      as_tibble() %>% 
+      select(value = Estimate, se = `Std. Error`) %>% 
+      mutate(term = c("b0", "b1", "b2"))
+  }
+  else{
+    stop(sprintf("Unknown method: %s", method))
+  }
+  coefs
+}
+
+
 mv_poison <-function(n = 100, r = .2, lambda = 1){
   normal_mu <- c(0, 0)
   sigma <- matrix(c(1, r, r, 1), byrow = T, ncol = 2)
@@ -41,22 +141,24 @@ simulate_wy <- function(n = 100, sd_error = 1,  a = 1,  r = -.7, relia = .4, lam
            vitamin_d_measured = vitamin_d,
            musical_performance_normed = 25 * as.numeric(scale(musical_performance)) + 100)
 }
+
 correct_wy_models <- function(n = 1000){
   set.seed(666)  
   simu <- simulate_wy(n = n) 
   browser()
-  var_map <- c("y" = "musical_performance", "x" = "practice_hours", "z" = "vitamin_d")
+  #var_map <- c("y" = "musical_performance", "x" = "practice_hours", "z" = "vitamin_d")
   simu <- simu %>% 
     mutate(y = musical_performance_normed, 
            x = practice_hours_measured, 
-           z = vitamin_d_measured) %>% 
-    mutate(x_se = .4, y_se = 1, z_se = .4)
+           zt = vitamin_d) %>% 
+    mutate(x_se = .4, y_se = 1)
   coefs <- 
     map_dfr(setdiff(wy_methods, "MI"), function(m){
-      get_coefs_wy(simu, method = m) %>% mutate(method = m)
+      get_coefs_wy(simu, method = m, measurement_error = .4) %>% 
+        mutate(method = m)
     
   })
-  true <- simu %>% lm(y ~ practice_hours + vitamin_d, data = . )
+  true <- simu %>% lm(musical_performance ~ practice_hours + vitamin_d, data = . )
   true_coefs <- 
     broom::tidy(true) %>%
     select(term, value = estimate, se = std.error) %>%
@@ -70,173 +172,7 @@ correct_wy_models <- function(n = 1000){
   coefs 
 }
 
-wy_methods <- c("no_correction", "outlier_exclusion", "weighting", "LV", "MI", "simex")
-
-get_coefs_wy <- function(df, method){
-  messagef("Westfall-Yarkoni: correcting with method '%s'", method)
-  
-  if (method == "no_correction") {
-    coefs <- broom::tidy(lm(y ~ x + z, data = df)) %>% 
-      select(term, value = estimate, se = std.error) %>% 
-      mutate(term = c("b0", "b1", "b2"))
-  }
-  else if (method == "outlier_exclusion") {
-    ol_y <- suppressMessages(boxB(
-      x = df$y,
-      k = 1.5,
-      method = 'resistant'
-    )$outliers)
-    
-    ol_x <- suppressMessages(boxB(
-      x = df$x,
-      k = 1.5,
-      method = 'resistant'
-    )$outliers)
-    
-    ol_z <- suppressMessages(boxB(
-      x = df$z,
-      k = 1.5,
-      method = 'resistant'
-    )$outliers)
-    
-    
-    ol <- c(ol_y, ol_x, ol_z)
-    tmp_data <- df
-    if (length(ol) >= 1) {
-      #coefs <- coef(lm(y ~ x + z, data = df[-ol, ]))
-      tmp_data <- df[-ol, ]
-    }
-    coefs <- broom::tidy(lm(y ~ x + z, data = tmp_data)) %>%
-      select(term, value = estimate, se = std.error) %>%
-      mutate(term = c("b0", "b1", "b2"))
-  }
-  
-  # else if (method == "weighting_sd") {
-  #   #inv_err <- mean(1 / df$y_se^2, 1 / df$x_se^2, 1 / df$z_se^2)
-  #   #inv_err <- rep(mean(1 / df$z_se ^ 2), nrow(df))
-  #   #inv_err <- 1 / df$x_se ^ 2
-  #   inv_err <- 1 / sqrt(df$x_se ^ 2 + df$z_se ^ 2)
-  #   coefs <- broom::tidy(lm(y ~ x + z, weights = inv_err, data = df)) %>% 
-  #     select(term, value = estimate, se = std.error) %>% 
-  #     mutate(term = c("b0", "b1", "b2"))
-  # }
-  else if (method == "weighting") {
-    #inv_err <- mean(1 / df$y_se^2, 1 / df$x_se^2, 1 / df$z_se^2)
-    #inv_err <- rep(mean(1 / df$z_se ^ 2), nrow(df))
-    #inv_err <- 1 / df$x_se ^ 2
-    inv_err <- 1 / (df$x_se ^ 2 + df$z_se ^ 2)
-    coefs <- broom::tidy(lm(y ~ x + z, weights = inv_err, data = df)) %>% 
-      select(term, value = estimate, se = std.error) %>% 
-      mutate(term = c("b0", "b1", "b2"))
-  }
-  
-  else if (method == "LV") {
-    av_se_x <- mean(df$x_se)
-    av_se_y <- mean(df$y_se)
-    av_se_z <- mean(df$z_se)
-    
-    r.lx <- 1 / (1 + av_se_x^2) #compute reliability of latent variable (i.e., common variance) from measurement error
-    r.x <- 1 - r.lx    #compute unique variance from measurement error
-    
-    r.ly <- 1 / (1 + av_se_y^2) #compute reliability of latent variable (i.e., common variance) from measurement error
-    r.y <- 1 - r.ly    #compute unique variance from measurement error
-    
-    r.lz <- 1 / (1 + av_se_z^2) #compute reliability of latent variable (i.e., common variance) from measurement error
-    r.z <- 1 - r.lz    #compute unique variance from measurement error
-    
-    m <- '
-        lx =~ 1 * x
-        lx ~~ psi * lx
-        x ~~ theta * x
-        theta == psi * %s/%s
-
-        ly =~ 1 * y
-        ly ~~ tau * ly
-        y ~~ eta * y
-        eta == tau * %s/%s
-
-        lz =~ 1 * z
-        lz ~~ phi * lz
-        z ~~ zeta * z
-        zeta == phi * %s/%s
-
-        y ~ lx + lz
-        x ~ 0*1
-        z ~ 0*1
-        '
-    
-    m <- sprintf(m, r.x, r.lx, r.y, r.ly, r.z, r.lz)
-    
-    fit <- suppressWarnings(sem(
-      m,
-      data = df,
-      estimator = "MLR",
-      meanstructure = T,
-      rstarts = 5,
-      optim.dx.tol = 0.001
-    ))
-    #browser()
-    #print(parameterEstimates(fit))
-    coefs <- suppressWarnings(parameterEstimates(fit)[c(17, 10, 11), c("label", "est", "se")] %>% as_tibble())
-    coefs <- coefs %>%
-      select(term = label, value = est, se) %>%
-      mutate(term = c("b0", "b1", "b2"))
-  }
-  
-  else if (method == "MI") {
-    tryCatch({
-      mice.dfs = my_TSI(
-        df %>% select(-c(xt, yt, zt)),
-        os_names = c("y", "x", "z"),
-        se_names = c("y_se", "x_se", "z_se"),
-        metrics = "z",
-        score_types = "ML",
-        separated = T,
-        mice_args = c(
-          m = 20,
-          maxit = 10,
-          printFlag = F
-        )
-      )
-      
-      coefs <- pool(with(mice.dfs, lm(true_y ~ true_x + true_z))) %>%
-        summary() %>%
-        select(term, value = estimate, se = std.error) %>%
-        mutate(term = c("b0", "b1", "b2")) %>% 
-        as_tibble()
-    }, error = function(e) {
-      warning(sprintf("MSI error for error level"))
-      coefs <<- tibble(
-        term = c("b0", "b1", "b2"),
-        value = c(NA, NA, NA),
-        se = c(NA, NA, NA)
-      )
-    })
-  }
-  else if (method  == "simex") {
-    #browser()
-    model_naive <- lm(y ~ x + z, data = df)
-    model_simex <- simex(
-      model_naive,
-      SIMEXvariable = c("x", "y", "z"),
-      B = 200,
-      asymptotic = F,
-      measurement.error = cbind(df$x_se, df$y_se, df$z_se)
-    )
-    browser()
-    sum <- summary(model_simex)$coefficients$jackknife
-    coefs <- as.data.frame(sum) %>%
-      as_tibble() %>%
-      select(value = Estimate, se = `Std. Error`) %>%
-      mutate(term = c("b0", "b1", "b2"))
-  }
-  else{
-    stop(sprintf("Unknown method: %s", method))
-  }
-  #browser()
-  coefs 
-}
-
+wy_methods <- c("no_correction", "outlier_exclusion",  "LV", "MI", "simex")
 
 get_wy_plots <- function(n = 1000){
   set.seed(666)  
@@ -281,6 +217,29 @@ get_wy_plots <- function(n = 1000){
   q  
 }
 
+coef_plot <- function(coefs_data){
+  coefs_data <- coefs_data %>% 
+    mutate(method = factor(method, 
+                           levels = c("no_correction", 
+                                      "weighting", 
+                                      "outlier_exclusion",
+                                      "simex",
+                                      "brms", 
+                                      "MI", 
+                                      "LV"))) 
+  q <- coefs_data %>% ggplot(aes(x = term, y = value, fill = method))
+  q <- q + geom_col(position = position_dodge(width = 1))
+  q <- q + geom_point(position = position_dodge(width = 1))
+  q <- q + geom_errorbar(aes(ymin = value - 2*se, ymax = value + 2*se), 
+                         position = position_dodge(width = 1), width = .7 )
+  q <- q + scale_fill_brewer(palette = "Set1")
+  q <- q + labs(x = "Cofficient", y = "Value", fill = "")
+  q <- q + theme_bw()
+  q <- q + theme(legend.position = c(.6, .25), legend.background = element_blank())
+  q <- q + theme(legend.position = "bottom")
+  q
+  
+}
 # NOT RUN
 # simulate_wy(
 #   n = 1000,
@@ -290,3 +249,6 @@ get_wy_plots <- function(n = 1000){
 # ) %>%
 #   select(-c(error, practice_hours_measured)) %>%
 #   correlation::correlation(partial = T, p_adjust = "none")
+#
+# Correction:
+# correct_wy_models() %>% coef_plot() 

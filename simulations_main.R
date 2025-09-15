@@ -1,6 +1,13 @@
 library(rempsyc)
 library(flextable)
 source("ME_simulator.R")
+correction_labels <-  c("no_correction" = "No correction", 
+                        "weighting0" = "Error Weighting (Full)",
+                        "weighting4" = "Error Weighting (Predictors)",
+                        "outlier_exclusion" = "Outlier Exclusion", 
+                        "simex" = "Simex",
+                        "MI" = "Multiple Imputation", 
+                        "LV" = "Latent Variables" )
 
 diagnostics_1 <- function(simul_data,
                           metric = "rel_error",
@@ -175,7 +182,7 @@ simu_def_test_server_cmp <- expand_grid(
   error_types = c("heteroscedastic"),
   measurement_errors = c("low", "medium", "high", "very_high"),
   me_diffs = c(0),
-  methods = c("no_correction",  "weighting", "weighting_sd", "simex")
+  methods = c("no_correction",  "weighting", "weighting_full", "simex")
 )
 
 simu_def_full <- bind_rows(simu_def_full_12, simu_def_full_3)
@@ -242,8 +249,12 @@ run_simulations <- function(scenarios = c(1, 2, 3),
                                    id = id)
     })
   })
-  cutoff <- ret %>% filter(method == "no_correction") %>% pull(se) %>% max()
-  ret <- ret %>% mutate(status = factor(!is.na(se) & se <= cutoff, levels = c(FALSE, TRUE), labels = c("bad", "clean")))
+  cutoff <- ret %>% filter(method == "no_correction") %>% pull(se) %>% max() 
+  cutoff <- cutoff * sqrt(1 + 1.52^2)
+  ret <- ret %>% 
+    mutate(status = factor(!is.na(se) & se <= cutoff, 
+                           levels = c(FALSE, TRUE), 
+                           labels = c("bad", "clean")))
   saveRDS(ret, file = sprintf("%s/%s_all.rds", sim_dir, id))
   ret
 }

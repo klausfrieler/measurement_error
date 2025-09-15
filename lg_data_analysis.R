@@ -35,7 +35,7 @@ analyze_lg_data <- function(){
            method = "no_correction")
   
   ##outlier exclusion
-  browser()
+  #browser()
   ol_y <- suppressMessages(boxB(
     x = lg_dat$BAT.error,
     k = 1.5,
@@ -102,7 +102,7 @@ analyze_lg_data <- function(){
     mutate(term = c("b0", "b1", "b2"),  
            method = "weighting4")
   
-  browser()
+  #browser()
   ### LAVAAN  
   
   av_se_x <- mean(lg_dat$MIQ.error)
@@ -194,5 +194,5 @@ analyze_lg_data <- function(){
   coefs_MI
 
   
-  bind_rows(coefs_naive, coefs_w, coefs_MI, coefs_simex, coefs_lv, coefs_outlier)
+  bind_rows(coefs_naive, coefs_w0, coefs_w4, coefs_MI, coefs_simex, coefs_lv, coefs_outlier)
 }

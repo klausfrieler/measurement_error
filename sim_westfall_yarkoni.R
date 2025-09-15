@@ -2,6 +2,7 @@ library(tidyverse)
 library(univOutl)
 library(simex)
 library(lavaan)
+
 get_coefs_wy <- function(df, method, measurement_error){
   if (method == "no_correction") {
     coefs <- broom::tidy(lm(y ~ x + zt, data = df)) %>% 

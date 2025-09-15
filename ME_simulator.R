@@ -353,7 +353,7 @@ ME_simulator <- R6::R6Class("ME_simulator",
                                       return(invisible(self))
                                     }
                                   }
-                                  browser()
+                                  #browser()
                                   if(!is.null(max_metric)){
                                     simul_data <- simul_data %>% filter(abs(!!sym(metric)) <= max_metric)
                                     if(nrow(simul_data) == 0){

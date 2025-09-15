@@ -18,7 +18,9 @@ analyze_lg_data <- function(){
     group_by(p_id) %>% 
     mutate(last = test_wave == max(test_wave)) %>% 
     ungroup() %>% 
-    filter(last) %>% select(-last)
+    filter(last) %>% 
+    select(-last) #%>% 
+    #mutate(GMS.musical_training = scale(GMS.musical_training) %>% as.numeric())
   
   ### demographics
   
@@ -33,7 +35,23 @@ analyze_lg_data <- function(){
     select(term, value = estimate, se = std.error) %>% 
     mutate(term = c("b0", "b1", "b2"), 
            method = "no_correction")
-  
+  require(brms)
+  browser()
+  m_bayes <- brms::brm(data = lg_dat,
+                       BAT.score | mi(BAT.error)  ~ me(MIQ.score, MIQ.error) + GMS.musical_training,
+                       prior = c(prior(normal(0, 10), class = "b"),
+                                 prior(normal(0, 1), class = "meanme"),
+                                 prior(cauchy(0, 2.5), class = "sigma")),
+                       iter = 4000, warmup = 1000, cores = 12
+                       )
+  coefs_bayes <- m_bayes %>% 
+    fixef() %>% 
+    as.data.frame() %>% 
+    rownames_to_column("term") %>% 
+    select(value = Estimate, se = Est.Error) %>%  
+    mutate(term = c("b0", "b2", "b1"), 
+           method = "brms") %>% 
+    as_tibble()
   ##outlier exclusion
   #browser()
   ol_y <- suppressMessages(boxB(
@@ -70,10 +88,10 @@ analyze_lg_data <- function(){
   ###weighting
   inv_err <- (1 /sqrt(lg_dat$MIQ.error ^ 2 + lg_dat$BAT.error ^ 2)) #* (1 / lg_dat$GMS.Musical_training.error ^ 2)
   
-  coefs_w0 <- broom::tidy(lm(BAT.score ~ MIQ.score + GMS.musical_training, weights = inv_err, data = lg_dat)) %>% 
+  coefs_w <- broom::tidy(lm(BAT.score ~ MIQ.score + GMS.musical_training, weights = inv_err, data = lg_dat)) %>% 
     select(term, value = estimate, se = std.error) %>% 
     mutate(term = c("b0", "b1", "b2"),  
-           method = "weighting0")
+           method = "weighting")
   inv_err <- (1 / (lg_dat$MIQ.error ^ 2 + lg_dat$BAT.error ^ 2)) #* (1 / lg_dat$GMS.Musical_training.error ^ 2)
   
   coefs_w1 <- broom::tidy(lm(BAT.score ~ MIQ.score + GMS.musical_training, weights = inv_err, data = lg_dat)) %>% 
@@ -194,5 +212,34 @@ analyze_lg_data <- function(){
   coefs_MI
 
   
-  bind_rows(coefs_naive, coefs_w0, coefs_w4, coefs_MI, coefs_simex, coefs_lv, coefs_outlier)
+  bind_rows(coefs_naive, 
+            coefs_bayes, 
+            coefs_w, 
+            coefs_MI, 
+            coefs_simex, 
+            coefs_lv, 
+            coefs_outlier)
+}
+coef_plot <- function(coefs_data){
+  coefs_data <- coefs_data %>% 
+    mutate(method = factor(method, 
+                           levels = c("no_correction", 
+                                      "weighting", 
+                                      "outlier_exclusion",
+                                      "simex",
+                                      "brms", 
+                                      "MI", 
+                                      "LV"))) 
+  q <- coefs_data %>% ggplot(aes(x = term, y = value, fill = method))
+  q <- q + geom_col(position = position_dodge(width = 1))
+  q <- q + geom_point(position = position_dodge(width = 1))
+  q <- q + geom_errorbar(aes(ymin = value - 2*se, ymax = value + 2*se), 
+                         position = position_dodge(width = 1), width = .7 )
+  q <- q + scale_fill_brewer(palette = "Set1")
+  q <- q + labs(x = "Cofficient", y = "Value", fill = "")
+  q <- q + theme_bw()
+  q <- q + theme(legend.position = c(.6, .25), legend.background = element_blank())
+  q <- q + theme(legend.position = "bottom")
+  q
+  
 }

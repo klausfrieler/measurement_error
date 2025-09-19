@@ -99,7 +99,54 @@ get_coefs_wy <- function(df, method, measurement_error){
   coefs
 }
 
+MTS2 <- c(
+  +1.000, +0.681, +0.609, +0.557, -0.098, -0.125,				
+  +0.681,	+1.000, +0.667, +0.501, -0.132, -0.174,  			
+  +0.609, +0.667,	+1.000, +0.417, -0.331, -0.394,		
+  +0.557,	+0.501,	+0.417,	+1.000, +0.003, -0.021,
+  -0.098,	-0.132,	-0.331,	+0.003,	+1.000, +0.927,
+  -0.125,	-0.174,	-0.394,	-0.021,	+0.927,	+1.000)
 
+mat_from_lower_tri <- function(x, with_diag = T, names = NULL){
+  n <- floor(sqrt(2 * length(x)))
+  mat <- matrix(rep(0, n*n), ncol = n)
+  upper_indices <- which(upper.tri(mat, diag = TRUE), arr.ind = TRUE)  
+  mat[upper_indices] <- x
+  browser()
+  ret <- mat %>%  t() %>% as.dist() %>% as.matrix()
+  diag(ret) <- 1
+  if(!is.null(names)){
+    colnames(ret) <- names
+    row.names(ret) <- names
+  }
+  ret
+}
+mts2_names <- c("OC",
+"MU",
+"JB",
+"F",
+"A",
+"PR")
+ 
+mts3_names <-c("A", "F",  "MU", "JB", "OC", "PR")
+mts4_names <-c("MU", "JB", "F", "PR", "OC",  "A" )
+
+MTS3 <- c(1,				
+0.35, 1,				
+0.33, 0.017, 1, 		
+0.073, -0.172,	-0.303, 1, 	
+-0.155, -0.337, -0.119, 0.102, 1,
+-0.796, -0.343, -0.224, -0.086,	0.263,	1)
+
+MTS4 <- c(
+  1, 				
+  0.643,	1,			
+  0.386,	0.251,	1, 		
+  0.145,	0.115,	0.007,	1, 	
+  -0.192,	-0.042,	-0.294,	-0.005,	1, 
+  -0.32,	-0.337,	-0.264,	-0.297,	0.062,	1
+  )
+  
 mv_poison <-function(n = 100, r = .2, lambda = 1){
   normal_mu <- c(0, 0)
   sigma <- matrix(c(1, r, r, 1), byrow = T, ncol = 2)

@@ -248,15 +248,15 @@ get_coefs_scenario3 <- function(df, method,  measurement_error_level){
       mutate(term = c("b0", "b1", "b2"))
   }
   
-  # else if (method == "weighting_sd") {
-  #   #inv_err <- mean(1 / df$y_se^2, 1 / df$x_se^2, 1 / df$z_se^2)
-  #   #inv_err <- rep(mean(1 / df$z_se ^ 2), nrow(df))
-  #   #inv_err <- 1 / df$x_se ^ 2
-  #   inv_err <- 1 / sqrt(df$x_se ^ 2 + df$z_se ^ 2)
-  #   coefs <- broom::tidy(lm(y ~ x + z, weights = inv_err, data = df)) %>% 
-  #     select(term, value = estimate, se = std.error) %>% 
-  #     mutate(term = c("b0", "b1", "b2"))
-  # }
+  else if (method == "weighting_full") {
+    #inv_err <- mean(1 / df$y_se^2, 1 / df$x_se^2, 1 / df$z_se^2)
+    #inv_err <- rep(mean(1 / df$z_se ^ 2), nrow(df))
+    #inv_err <- 1 / df$x_se ^ 2
+    inv_err <- 1 / sqrt(df$y_se ^ 2 + df$x_se ^ 2 + df$z_se ^ 2)
+    coefs <- broom::tidy(lm(y ~ x + z, weights = inv_err, data = df)) %>%
+      select(term, value = estimate, se = std.error) %>%
+      mutate(term = c("b0", "b1", "b2"))
+  }
   else if (method == "weighting") {
     #inv_err <- mean(1 / df$y_se^2, 1 / df$x_se^2, 1 / df$z_se^2)
     #inv_err <- rep(mean(1 / df$z_se ^ 2), nrow(df))

@@ -53,7 +53,7 @@ analyze_lg_data <- function(){
            method = "brms") %>% 
     as_tibble()
   ##outlier exclusion
-  browser()
+  #browser()
   ol_y <- suppressMessages(boxB(
     x = lg_dat$BAT.error,
     k = 1.5,
@@ -120,7 +120,7 @@ analyze_lg_data <- function(){
     mutate(term = c("b0", "b1", "b2"),  
            method = "weighting4")
   
-  browser()
+  #browser()
   ### LAVAAN  
   
   av_se_x <- mean(lg_dat$MIQ.error)

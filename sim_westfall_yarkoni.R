@@ -1,4 +1,7 @@
 library(tidyverse)
+library(univOutl)
+library(simex)
+library(lavaan)
 
 get_coefs_wy <- function(df, method, measurement_error){
   if (method == "no_correction") {
@@ -88,6 +91,7 @@ get_coefs_wy <- function(df, method, measurement_error){
                          asymptotic = F, 
                          measurement.error = measurement_error)
     sum <- summary(model_simex)$coefficients$jackknife
+    #browser()
     coefs <- as.data.frame(sum) %>%  
       as_tibble() %>% 
       select(value = Estimate, se = `Std. Error`) %>% 
@@ -153,7 +157,7 @@ mv_poison <-function(n = 100, r = .2, lambda = 1){
   normal <- MASS::mvrnorm(n, normal_mu, sigma)
   unif <- pnorm(normal)
   #browser()
-  pois <- t(qpois(t(unif), lambda))
+  #pois <- t(qpois(t(unif), lambda))
   pois1 <- t(qpois(t(unif[,1]), lambda))
   normal2 <- t(qnorm(t(unif[, 2]))) * 25 + 100
   return(cbind(pois1, normal2))
@@ -177,7 +181,7 @@ simulate_wy <- function(n = 100, sd_error = 1,  a = 1,  r = -.7, relia = .4, lam
   error <- rnorm(n, 0, sd_error)
   practice_hours_measured <- predictors$practice_hours + rnorm(n, sd = sqrt(1/relia - 1) * lambda)
   
-  vitamin_d_measured <- predictors$vitamin_d + rnorm(n, sd = sqrt(1/relia - 1) * lambda)
+  #vitamin_d_measured <- predictors$vitamin_d + rnorm(n, sd = sqrt(1/relia - 1) * lambda)
   #browser()
   #print(var(predictors$practice_hours)/var(practice_hours_measured))
   #browser()
@@ -189,28 +193,29 @@ simulate_wy <- function(n = 100, sd_error = 1,  a = 1,  r = -.7, relia = .4, lam
            musical_performance_normed = 25 * as.numeric(scale(musical_performance)) + 100)
 }
 
-correct_wy_models <- function(n = 1000){
+correct_wy_models <- function(n = 1000, relia = .4, lambda = 1){
   set.seed(666)  
-  simu <- simulate_wy(n = n) 
-  browser()
+  simu <- simulate_wy(n = n, relia = relia, lambda = lambda) 
+  x_se <- sqrt(1/relia - 1) * lambda
+  #browser()
   #var_map <- c("y" = "musical_performance", "x" = "practice_hours", "z" = "vitamin_d")
   simu <- simu %>% 
     mutate(y = musical_performance_normed, 
            x = practice_hours_measured, 
            zt = vitamin_d) %>% 
-    mutate(x_se = .4, y_se = 1)
+    mutate(x_se = x_se, y_se = 1*25)
   coefs <- 
     map_dfr(setdiff(wy_methods, "MI"), function(m){
-      get_coefs_wy(simu, method = m, measurement_error = .4) %>% 
+      get_coefs_wy(simu, method = m, measurement_error = x_se) %>% 
         mutate(method = m)
     
   })
-  true <- simu %>% lm(musical_performance ~ practice_hours + vitamin_d, data = . )
+  true <- simu %>% lm(y ~ practice_hours + vitamin_d, data = . )
   true_coefs <- 
     broom::tidy(true) %>%
     select(term, value = estimate, se = std.error) %>%
     mutate(term = c("b0", "b1", "b2"), method = "true_model")
-  browser()
+  #browser()
   raw_coefs <- coefs
   coefs[coefs$term == "b0",]$value <- (true_coefs[true_coefs$term == "b0",]$value - coefs[coefs$term == "b0",]$value)/true_coefs[true_coefs$term == "b0",]$value  
   coefs[coefs$term == "b1",]$value <- (true_coefs[true_coefs$term == "b1",]$value - coefs[coefs$term == "b1",]$value)/true_coefs[true_coefs$term == "b1",]$value  
@@ -299,3 +304,4 @@ coef_plot <- function(coefs_data){
 #
 # Correction:
 # correct_wy_models() %>% coef_plot() 
+
